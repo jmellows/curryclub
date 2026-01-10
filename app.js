@@ -1283,14 +1283,13 @@ document.getElementById('addRestaurantForm').addEventListener('submit', async (e
         const min = parseFloat(slider.min);
         const max = parseFloat(slider.max);
         const sliderWidth = slider.offsetWidth;
-        const thumbWidth = 32; // Width of the native slider thumb
 
-        // Calculate position to match native slider thumb behavior
-        // The thumb travels from thumbWidth/2 to sliderWidth - thumbWidth/2
+        // Calculate position as percentage of slider width
+        // Chili uses translate(-50%) so it centers on the position
         const percent = (value - min) / (max - min);
-        const thumbOffset = percent * (sliderWidth - thumbWidth) + (thumbWidth / 2);
+        const position = percent * sliderWidth;
 
-        chili.style.left = `${thumbOffset}px`;
+        chili.style.left = `${position}px`;
         chili.style.transform = 'translate(-50%, 50%)';
     };
 
