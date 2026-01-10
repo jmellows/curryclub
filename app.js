@@ -79,20 +79,20 @@ function hideLoading() {
     document.getElementById('loadingSpinner').classList.add('hidden');
 }
 
-// Auth: Show login/signup forms
-document.getElementById('showSignup')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    document.getElementById('loginFormContainer').classList.add('hidden');
-    document.getElementById('signupFormContainer').classList.remove('hidden');
-    document.getElementById('authError').classList.add('hidden');
-});
+// Auth: Show login/signup forms (commented out - signup UI removed)
+// document.getElementById('showSignup')?.addEventListener('click', (e) => {
+//     e.preventDefault();
+//     document.getElementById('loginFormContainer').classList.add('hidden');
+//     document.getElementById('signupFormContainer').classList.remove('hidden');
+//     document.getElementById('authError').classList.add('hidden');
+// });
 
-document.getElementById('showLogin')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    document.getElementById('signupFormContainer').classList.add('hidden');
-    document.getElementById('loginFormContainer').classList.remove('hidden');
-    document.getElementById('authError').classList.add('hidden');
-});
+// document.getElementById('showLogin')?.addEventListener('click', (e) => {
+//     e.preventDefault();
+//     document.getElementById('signupFormContainer').classList.add('hidden');
+//     document.getElementById('loginFormContainer').classList.remove('hidden');
+//     document.getElementById('authError').classList.add('hidden');
+// });
 
 // Auth: Login
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
