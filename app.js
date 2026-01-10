@@ -352,11 +352,36 @@ async function loadTonightsPick() {
 async function showRestaurantDetail(restaurant) {
     currentRestaurant = restaurant;
 
+    // Set basic info immediately
     document.getElementById('detailRestaurantName').textContent = restaurant.name;
 
+    // Show average ratings immediately
+    document.getElementById('mealAverage').textContent =
+        `Club Average: ${restaurant.averageRatings.meal.toFixed(1)}/10`;
+    document.getElementById('bathroomAverage').textContent =
+        `Club Average: ${restaurant.averageRatings.bathroom.toFixed(1)}/10`;
+    document.getElementById('ambianceAverage').textContent =
+        `Club Average: ${restaurant.averageRatings.ambiance.toFixed(1)}/10`;
+    document.getElementById('serviceAverage').textContent =
+        `Club Average: ${restaurant.averageRatings.service.toFixed(1)}/10`;
+
+    // Initialize empty stars immediately
+    createStarRating('mealStars', 0);
+    createStarRating('bathroomStars', 0);
+    createStarRating('ambianceStars', 0);
+    createStarRating('serviceStars', 0);
+
+    document.getElementById('mealValue').textContent = '0/10';
+    document.getElementById('bathroomValue').textContent = '0/10';
+    document.getElementById('ambianceValue').textContent = '0/10';
+    document.getElementById('serviceValue').textContent = '0/10';
+
+    // FLIP TO DETAIL PAGE IMMEDIATELY
+    showPage('detail');
+
+    // Load data in background while flip animation plays
     // Check if this is tonight's pick
-    try {
-        const pickDoc = await getDoc(doc(db, 'tonightsPick', 'current'));
+    getDoc(doc(db, 'tonightsPick', 'current')).then(pickDoc => {
         const isTonightsPick = pickDoc.exists() && pickDoc.data().restaurantId === restaurant.id;
 
         const toggleBtn = document.getElementById('setTonightsPick');
@@ -369,24 +394,12 @@ async function showRestaurantDetail(restaurant) {
             toggleBtn.classList.remove('active');
             toggleText.textContent = 'Set as Tonight\'s Pick';
         }
-    } catch (error) {
+    }).catch(error => {
         console.error('Error checking tonight\'s pick:', error);
-    }
-
-    // Show average ratings
-    document.getElementById('mealAverage').textContent =
-        `Club Average: ${restaurant.averageRatings.meal.toFixed(1)}/10`;
-    document.getElementById('bathroomAverage').textContent =
-        `Club Average: ${restaurant.averageRatings.bathroom.toFixed(1)}/10`;
-    document.getElementById('ambianceAverage').textContent =
-        `Club Average: ${restaurant.averageRatings.ambiance.toFixed(1)}/10`;
-    document.getElementById('serviceAverage').textContent =
-        `Club Average: ${restaurant.averageRatings.service.toFixed(1)}/10`;
+    });
 
     // Load user's rating if exists
-    try {
-        const userRatingDoc = await getDoc(doc(db, 'restaurants', restaurant.id, 'ratings', currentUser.uid));
-
+    getDoc(doc(db, 'restaurants', restaurant.id, 'ratings', currentUser.uid)).then(userRatingDoc => {
         if (userRatingDoc.exists()) {
             const userRating = userRatingDoc.data();
             document.getElementById('userRatingStatus').textContent =
@@ -404,22 +417,10 @@ async function showRestaurantDetail(restaurant) {
             document.getElementById('serviceValue').textContent = `${userRating.service || 0}/10`;
         } else {
             document.getElementById('userRatingStatus').classList.add('hidden');
-
-            createStarRating('mealStars', 0);
-            createStarRating('bathroomStars', 0);
-            createStarRating('ambianceStars', 0);
-            createStarRating('serviceStars', 0);
-
-            document.getElementById('mealValue').textContent = '0/10';
-            document.getElementById('bathroomValue').textContent = '0/10';
-            document.getElementById('ambianceValue').textContent = '0/10';
-            document.getElementById('serviceValue').textContent = '0/10';
         }
-    } catch (error) {
+    }).catch(error => {
         console.error('Error loading user rating:', error);
-    }
-
-    showPage('detail');
+    });
 }
 
 // Back button
