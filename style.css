@@ -1121,14 +1121,28 @@ body {
     pointer-events: none;
     transition: left 0.1s ease, transform 0.1s ease;
     z-index: 10;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
     line-height: 1;
-    border: none;
-    background: none;
-    padding: 0;
-    margin: 0;
-    outline: none;
-    box-shadow: none;
+    display: inline-block;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+    border: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    text-decoration: none !important;
+    overflow: visible !important;
+    width: auto !important;
+    height: auto !important;
+    isolation: isolate;
+    mix-blend-mode: normal;
 }
 
 .submit-rating-btn {
