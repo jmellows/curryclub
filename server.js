@@ -19,12 +19,8 @@ const server = http.createServer((req, res) => {
     let filePath = '.' + req.url;
 
     // Handle routes without file extensions
-    if (filePath === './') {
+    if (filePath === './' || filePath === './dashboard' || filePath === './detail') {
         filePath = './index.html';
-    } else if (filePath === './dashboard') {
-        filePath = './dashboard.html';
-    } else if (filePath === './detail') {
-        filePath = './detail.html';
     } else if (filePath === './admin') {
         filePath = './admin.html';
     }
