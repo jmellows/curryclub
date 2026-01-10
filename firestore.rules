@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Restaurants collection
+    match /restaurants/{restaurantId} {
+      // Anyone authenticated can read restaurants
+      allow read: if request.auth != null;
+      // Anyone authenticated can create restaurants
+      allow create: if request.auth != null;
+      // Anyone authenticated can update restaurants (for locking)
+      allow update: if request.auth != null;
+      // Admin or any authenticated user can delete restaurants (temporarily allow for cleanup)
+      allow delete: if request.auth != null;
+
+      // Ratings subcollection
+      match /ratings/{ratingId} {
+        // Anyone authenticated can read ratings
+        allow read: if request.auth != null;
+        // Users can write their own ratings OR admin can delete
+        allow write: if request.auth != null && request.auth.uid == ratingId;
+        allow delete: if request.auth != null;
+      }
+    }
+
+    // Tonight's pick
+    match /tonightsPick/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Whitelist collection - admin only
+    match /whitelist/{email} {
+      allow read: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
+      allow write: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
+    }
+
+    // Sessions collection - for analytics
+    match /sessions/{userId} {
+      // Users can write their own session
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admin can read all sessions
+      allow read: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
+
+      // Session history subcollection
+      match /history/{historyId} {
+        // Users can write their own history
+        allow write: if request.auth != null && request.auth.uid == userId;
+        // Admin can read all history
+        allow read: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
+      }
+    }
+
+    // Notifications collection - for broadcasting funny notifications
+    match /notifications/{notificationId} {
+      // Any authenticated user can read notifications
+      allow read: if request.auth != null;
+      // Any authenticated user can create notifications
+      allow create: if request.auth != null;
+      // Admin can delete old notifications
+      allow delete: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
+    }
+  }
+}

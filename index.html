@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beachlands Curry Club</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=70">
 </head>
 <body>
     <!-- Login Page -->
     <div id="loginPage" class="page active">
         <div class="login-container">
             <div class="login-box">
-                <h1>Beachlands Curry Club</h1>
+                <img src="logov3.png" alt="Beachlands Curry Club" class="login-logo">
                 <div id="loginFormContainer">
                     <form id="loginForm">
                         <div class="input-group">
@@ -30,6 +30,30 @@
         </div>
     </div>
 
+    <!-- Slide-out Menu -->
+    <div id="menuBackdrop" class="menu-backdrop"></div>
+    <div id="slideOutMenu" class="slide-out-menu">
+        <button class="close-menu-btn" id="closeMenuBtn">×</button>
+        <nav class="menu-nav">
+            <a href="#" id="menuMembersLink" class="menu-item">
+                <span class="menu-icon">👥</span>
+                Members
+            </a>
+            <a href="#" id="menuProfileLink" class="menu-item">
+                <span class="menu-icon">👤</span>
+                Profile
+            </a>
+            <a href="#" id="menuAdminLink" class="menu-item hidden">
+                <span class="menu-icon">📊</span>
+                Admin
+            </a>
+            <a href="#" id="menuLogoutLink" class="menu-item">
+                <span class="menu-icon">🚪</span>
+                Logout
+            </a>
+        </nav>
+    </div>
+
     <!-- Dashboard Page -->
     <div id="dashboardPage" class="page">
         <!-- Tonight's Pick Section -->
@@ -37,12 +61,16 @@
             <div class="tonights-pick-card">
                 <div class="tonights-pick-header">
                     <span class="pick-icon">🍛</span>
-                    <h2>Tonight's Pick</h2>
+                    <h1 class="tonights-pick-title">tonight's pick</h1>
+                    <span class="tonights-pick-lock" id="tonightsPickLock"></span>
                 </div>
                 <div class="tonights-pick-content">
-                    <h3 id="tonightsPickName">-</h3>
-                    <div class="tonights-pick-rating" id="tonightsPickRating">-</div>
-                    <button class="rate-btn" id="rateTonightsPick">Rate It Now</button>
+                    <h2 class="tonights-pick-name" id="tonightsPickName">-</h2>
+                    <div class="tonights-pick-rating-wrapper">
+                        <span class="tonights-pick-label">CLUB AVERAGE</span>
+                        <div class="tonights-pick-rating" id="tonightsPickRating">-</div>
+                    </div>
+                    <button class="rate-btn" id="rateTonightsPick">RATE IT NOW</button>
                 </div>
             </div>
         </div>
@@ -50,21 +78,21 @@
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="header-top">
-                <h1>Beachlands Curry Club</h1>
-                <button class="logout-btn" id="logoutBtn">Logout</button>
+                <button class="burger-menu-btn" id="burgerMenuBtn">☰</button>
+                <img src="textlogo.png" alt="Beachlands Curry Club" class="dashboard-logo">
             </div>
             <div class="club-stats">
                 <div class="stat">
+                    <span class="stat-label">RESTAURANTS</span>
                     <span class="stat-value" id="totalRestaurants">0</span>
-                    <span class="stat-label">Restaurants</span>
                 </div>
-                <div class="stat">
+                <div class="stat clickable" id="membersStatBtn">
+                    <span class="stat-label">MEMBERS</span>
                     <span class="stat-value" id="totalRatings">0</span>
-                    <span class="stat-label">Ratings</span>
                 </div>
                 <div class="stat">
+                    <span class="stat-label">AVG RATING</span>
                     <span class="stat-value" id="overallAverage">0.0</span>
-                    <span class="stat-label">Avg Rating</span>
                 </div>
             </div>
         </div>
@@ -121,63 +149,260 @@
         <button class="fab" id="addRestaurantBtn">+</button>
     </div>
 
+    <!-- Members Page -->
+    <div id="membersPage" class="page">
+        <div class="members-container">
+            <button class="back-icon-btn" id="membersBackBtn" title="Back to Dashboard">←</button>
+            <h1 class="members-title">club members</h1>
+
+            <div class="members-tables-wrapper">
+                <!-- Table 1: Stats -->
+                <div class="members-table-container">
+                    <h2 class="table-subtitle">MEMBER STATISTICS</h2>
+                    <table class="members-table" id="membersTable1">
+                        <thead>
+                            <tr>
+                                <th>MEMBER</th>
+                                <th>AVG RATING</th>
+                                <th>RATED</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody1">
+                            <!-- Rows will be added by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table 2: Personality -->
+                <div class="members-table-container">
+                    <h2 class="table-subtitle">MEMBER PROFILES</h2>
+                    <table class="members-table" id="membersTable2">
+                        <thead>
+                            <tr>
+                                <th>MEMBER</th>
+                                <th>SPECIALIST</th>
+                                <th>TRAIT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody2">
+                            <!-- Rows will be added by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Page -->
+    <div id="profilePage" class="page">
+        <div class="profile-container">
+            <button class="back-icon-btn" id="profileBackBtn" title="Back to Dashboard">←</button>
+            <h1 class="profile-title">profile</h1>
+
+            <div class="profile-info-card">
+                <h2 class="section-title">PROFILE INFORMATION</h2>
+                <form id="changeNameForm">
+                    <div class="input-group">
+                        <label for="profileNameInput">Name</label>
+                        <input type="text" id="profileNameInput" required>
+                    </div>
+                    <button type="submit" class="submit-btn">UPDATE NAME</button>
+                </form>
+                <div class="profile-field" style="margin-top: 20px;">
+                    <label>Email</label>
+                    <div class="profile-value" id="profileEmail">-</div>
+                </div>
+            </div>
+
+            <div class="change-password-card">
+                <h2 class="section-title">CHANGE PASSWORD</h2>
+                <form id="changePasswordForm">
+                    <div class="input-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" minlength="6" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" minlength="6" required>
+                    </div>
+                    <button type="submit" class="submit-btn">UPDATE PASSWORD</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Page -->
+    <div id="adminPage" class="page">
+        <div class="admin-container">
+            <button class="back-icon-btn" id="adminBackBtn" title="Back to Dashboard">←</button>
+            <h1 class="admin-title">admin panel</h1>
+
+            <!-- Create User Account -->
+            <div class="admin-content" style="margin-bottom: 24px;">
+                <h2 class="table-subtitle">CREATE USER ACCOUNT</h2>
+                <form id="createAccountForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 14px; font-weight: 600; color: #666;">Email</label>
+                        <input
+                            type="email"
+                            id="accountEmail"
+                            required
+                            style="padding: 12px 16px; border: 2px solid #e5e5e5; border-radius: 12px; font-size: 14px; background: #f7f7f7;"
+                        >
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 14px; font-weight: 600; color: #666;">Display Name</label>
+                        <input
+                            type="text"
+                            id="accountName"
+                            required
+                            style="padding: 12px 16px; border: 2px solid #e5e5e5; border-radius: 12px; font-size: 14px; background: #f7f7f7;"
+                        >
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 14px; font-weight: 600; color: #666;">Temporary Password</label>
+                        <input
+                            type="password"
+                            id="accountPassword"
+                            required
+                            minlength="6"
+                            style="padding: 12px 16px; border: 2px solid #e5e5e5; border-radius: 12px; font-size: 14px; background: #f7f7f7;"
+                        >
+                    </div>
+                    <button
+                        type="submit"
+                        style="padding: 14px 24px; background: linear-gradient(180deg, #ff8c52, #ff6b35); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25); text-transform: uppercase;"
+                    >
+                        CREATE ACCOUNT
+                    </button>
+                </form>
+                <p style="font-size: 12px; color: #999; margin-top: 12px; font-style: italic;">
+                    Note: This creates the account immediately. User can change their password in their profile.
+                </p>
+            </div>
+
+            <!-- User Analytics -->
+            <div class="admin-content">
+                <h2 class="table-subtitle">USER ACTIVITY</h2>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table" id="adminTable">
+                        <thead>
+                            <tr>
+                                <th>MEMBER</th>
+                                <th>LAST LOGIN</th>
+                                <th>SESSION</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody">
+                            <!-- Rows will be added by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Whitelist -->
+            <div class="admin-content" style="margin-top: 24px;">
+                <h2 class="table-subtitle">WHITELIST</h2>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table" id="whitelistTable">
+                        <thead>
+                            <tr>
+                                <th>NAME</th>
+                                <th>EMAIL</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="whitelistTableBody">
+                            <!-- Rows will be added by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Detail/Rating Page -->
     <div id="detailPage" class="page">
         <div class="detail-container">
-            <button class="back-btn" id="backBtn">← Back</button>
-            <div class="detail-header">
-                <h1 class="detail-restaurant-name" id="detailRestaurantName"></h1>
-                <button class="tonight-pick-toggle" id="setTonightsPick">
-                    <span class="star-icon">⭐</span>
-                    <span id="tonightsPickText">Set as Tonight's Pick</span>
+            <div class="detail-top-bar">
+                <button class="back-icon-btn" id="backBtn" title="Back to Dashboard">
+                    ←
                 </button>
+                <div class="header-icons">
+                    <button class="tonight-pick-star" id="setTonightsPick" title="Tonight's Pick">
+                        ☆
+                    </button>
+                    <button class="lock-restaurant-btn hidden" id="lockRestaurantBtn" title="Lock/Unlock Rating">
+                        🔓
+                    </button>
+                    <button class="delete-restaurant-btn hidden" id="deleteRestaurantBtn" title="Delete Restaurant">
+                        🗑️
+                    </button>
+                </div>
             </div>
 
-            <div class="user-rating-status" id="userRatingStatus"></div>
+            <div class="detail-header-row">
+                <h1 class="detail-restaurant-name" id="detailRestaurantName"></h1>
+            </div>
+
+            <div class="overall-average-display" id="overallAverageDisplay">
+                <div class="overall-label">YOUR OVERALL RATING</div>
+                <div class="overall-value" id="overallAverageValue">-</div>
+            </div>
+
 
             <div class="rating-categories">
                 <div class="category-rating">
-                    <h3>Meal</h3>
-                    <div class="average-rating" id="mealAverage">Club Average: -</div>
+                    <h3 class="category-title">Meal</h3>
+                    <div class="category-average-row">
+                        <span class="category-label">CLUB AVG</span>
+                        <span class="average-rating" id="mealAverage">-</span>
+                    </div>
                     <div class="rating-input">
-                        <label>Your Rating:</label>
-                        <div class="star-rating" id="mealStars" data-category="meal">
-                            <!-- Stars will be generated by JS -->
-                        </div>
-                        <span class="rating-value" id="mealValue">0/10</span>
+                        <span class="slider-value" id="mealValue">0</span>
+                        <input type="range" class="rating-slider" id="mealSlider" data-category="meal"
+                               min="0" max="10" step="0.1" value="0">
                     </div>
                 </div>
                 <div class="category-rating">
-                    <h3>Bathroom</h3>
-                    <div class="average-rating" id="bathroomAverage">Club Average: -</div>
+                    <h3 class="category-title">Service</h3>
+                    <div class="category-average-row">
+                        <span class="category-label">CLUB AVG</span>
+                        <span class="average-rating" id="serviceAverage">-</span>
+                    </div>
                     <div class="rating-input">
-                        <label>Your Rating:</label>
-                        <div class="star-rating" id="bathroomStars" data-category="bathroom">
-                            <!-- Stars will be generated by JS -->
-                        </div>
-                        <span class="rating-value" id="bathroomValue">0/10</span>
+                        <span class="slider-value" id="serviceValue">0</span>
+                        <input type="range" class="rating-slider" id="serviceSlider" data-category="service"
+                               min="0" max="10" step="0.1" value="0">
                     </div>
                 </div>
                 <div class="category-rating">
-                    <h3>Ambiance</h3>
-                    <div class="average-rating" id="ambianceAverage">Club Average: -</div>
+                    <h3 class="category-title">Ambiance</h3>
+                    <div class="category-average-row">
+                        <span class="category-label">CLUB AVG</span>
+                        <span class="average-rating" id="ambianceAverage">-</span>
+                    </div>
                     <div class="rating-input">
-                        <label>Your Rating:</label>
-                        <div class="star-rating" id="ambianceStars" data-category="ambiance">
-                            <!-- Stars will be generated by JS -->
-                        </div>
-                        <span class="rating-value" id="ambianceValue">0/10</span>
+                        <span class="slider-value" id="ambianceValue">0</span>
+                        <input type="range" class="rating-slider" id="ambianceSlider" data-category="ambiance"
+                               min="0" max="10" step="0.1" value="0">
                     </div>
                 </div>
                 <div class="category-rating">
-                    <h3>Service</h3>
-                    <div class="average-rating" id="serviceAverage">Club Average: -</div>
+                    <h3 class="category-title">Bathroom</h3>
+                    <div class="category-average-row">
+                        <span class="category-label">CLUB AVG</span>
+                        <span class="average-rating" id="bathroomAverage">-</span>
+                    </div>
                     <div class="rating-input">
-                        <label>Your Rating:</label>
-                        <div class="star-rating" id="serviceStars" data-category="service">
-                            <!-- Stars will be generated by JS -->
-                        </div>
-                        <span class="rating-value" id="serviceValue">0/10</span>
+                        <span class="slider-value" id="bathroomValue">0</span>
+                        <input type="range" class="rating-slider" id="bathroomSlider" data-category="bathroom"
+                               min="0" max="10" step="0.1" value="0">
                     </div>
                 </div>
             </div>
@@ -208,11 +433,11 @@
                 </div>
 
                 <div class="rating-input-group">
-                    <label>Bathroom</label>
-                    <div class="star-rating" id="addBathroomStars" data-category="bathroom">
+                    <label>Service</label>
+                    <div class="star-rating" id="addServiceStars" data-category="service">
                         <!-- Stars will be generated by JS -->
                     </div>
-                    <span class="rating-value" id="addBathroomValue">0/10</span>
+                    <span class="rating-value" id="addServiceValue">0/10</span>
                 </div>
 
                 <div class="rating-input-group">
@@ -224,15 +449,28 @@
                 </div>
 
                 <div class="rating-input-group">
-                    <label>Service</label>
-                    <div class="star-rating" id="addServiceStars" data-category="service">
+                    <label>Bathroom</label>
+                    <div class="star-rating" id="addBathroomStars" data-category="bathroom">
                         <!-- Stars will be generated by JS -->
                     </div>
-                    <span class="rating-value" id="addServiceValue">0/10</span>
+                    <span class="rating-value" id="addBathroomValue">0/10</span>
                 </div>
 
                 <button type="submit" class="submit-btn">Save Restaurant</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content slide-in">
+            <h2>⚠️ Delete Restaurant?</h2>
+            <p class="delete-warning">This will permanently delete "<span id="deleteRestaurantName"></span>" and all its ratings.</p>
+            <p class="delete-warning-sub">This action cannot be undone!</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" id="cancelDeleteBtn">Cancel</button>
+                <button class="delete-confirm-btn" id="confirmDeleteBtn">Delete</button>
+            </div>
         </div>
     </div>
 
@@ -246,6 +484,6 @@
         <div class="spinner-circle"></div>
     </div>
 
-    <script type="module" src="app.js?v=2"></script>
+    <script type="module" src="app.js?v=73"></script>
 </body>
 </html>
