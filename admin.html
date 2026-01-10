@@ -126,7 +126,29 @@
         </div>
 
         <div class="admin-section">
-            <h2>Add New Email</h2>
+            <h2>Create New User Account</h2>
+            <form id="createAccountForm">
+                <div class="input-group">
+                    <label for="accountEmail">Email</label>
+                    <input type="email" id="accountEmail" required>
+                </div>
+                <div class="input-group">
+                    <label for="accountPassword">Temporary Password</label>
+                    <input type="password" id="accountPassword" required minlength="6">
+                </div>
+                <div class="input-group">
+                    <label for="accountName">Display Name</label>
+                    <input type="text" id="accountName" required>
+                </div>
+                <button type="submit" class="login-btn">Create Account</button>
+            </form>
+            <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                Note: This will add the email to whitelist and create their account.
+            </p>
+        </div>
+
+        <div class="admin-section">
+            <h2>Add Email to Whitelist Only</h2>
             <form class="add-email-form" id="addEmailForm">
                 <input
                     type="email"
@@ -134,7 +156,7 @@
                     placeholder="Enter email address"
                     required
                 >
-                <button type="submit">Add Email</button>
+                <button type="submit">Add to Whitelist</button>
             </form>
         </div>
 

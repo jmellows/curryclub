@@ -2,7 +2,10 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
     getAuth,
-    onAuthStateChanged
+    onAuthStateChanged,
+    createUserWithEmailAndPassword,
+    signOut,
+    updateProfile
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import {
     getFirestore,
@@ -110,6 +113,64 @@ function loadWhitelist() {
         container.innerHTML = html;
     });
 }
+
+// Create new user account
+document.getElementById('createAccountForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('accountEmail').value.trim().toLowerCase();
+    const password = document.getElementById('accountPassword').value;
+    const name = document.getElementById('accountName').value.trim();
+
+    if (!email || !password || !name) return;
+
+    if (!confirm(`Create account for ${email}?\n\nNote: You will be temporarily logged out and need to log back in.`)) {
+        return;
+    }
+
+    showLoading();
+    try {
+        // First, add to whitelist
+        await setDoc(doc(db, 'whitelist', email), {
+            email: email,
+            addedBy: currentUser.uid,
+            addedByEmail: currentUser.email,
+            addedAt: serverTimestamp()
+        });
+
+        // Create Firebase Auth account (this will log current admin out)
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: name });
+
+        // Sign out the newly created user
+        await signOut(auth);
+
+        hideLoading();
+
+        // Clear form
+        document.getElementById('accountEmail').value = '';
+        document.getElementById('accountPassword').value = '';
+        document.getElementById('accountName').value = '';
+
+        // Show success message and redirect to login
+        alert(`Account created successfully for ${email}!\n\nYou have been logged out. Please log back in.`);
+        window.location.href = '/';
+    } catch (error) {
+        hideLoading();
+        console.error('Error creating account:', error);
+
+        let errorMessage = 'Error creating account';
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'This email already has an account';
+        } else if (error.code === 'auth/weak-password') {
+            errorMessage = 'Password should be at least 6 characters';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        showToast(errorMessage);
+    }
+});
 
 // Add email to whitelist
 document.getElementById('addEmailForm').addEventListener('submit', async (e) => {
