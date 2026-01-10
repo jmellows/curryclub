@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Beachlands Curry Club</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-header">
+        <h1>Beachlands Curry Club</h1>
+        <div class="club-stats">
+            <div class="stat">
+                <span class="stat-value" id="totalRestaurants">0</span>
+                <span class="stat-label">Restaurants</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="totalVisits">0</span>
+                <span class="stat-label">Visits</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="overallAverage">0.0</span>
+                <span class="stat-label">Avg Rating</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Podium Section -->
+    <div class="podium-section">
+        <div class="podium-container">
+            <div class="podium-item silver" data-rank="2">
+                <div class="restaurant-card">
+                    <div class="rank-badge">2nd</div>
+                    <div class="restaurant-name"></div>
+                    <div class="rating-display">
+                        <div class="curry-bowls"></div>
+                        <div class="rating-number"></div>
+                    </div>
+                </div>
+                <div class="podium-block silver-block"></div>
+            </div>
+            <div class="podium-item gold" data-rank="1">
+                <div class="restaurant-card">
+                    <div class="rank-badge">1st</div>
+                    <div class="restaurant-name"></div>
+                    <div class="rating-display">
+                        <div class="curry-bowls"></div>
+                        <div class="rating-number"></div>
+                    </div>
+                </div>
+                <div class="podium-block gold-block"></div>
+            </div>
+            <div class="podium-item bronze" data-rank="3">
+                <div class="restaurant-card">
+                    <div class="rank-badge">3rd</div>
+                    <div class="restaurant-name"></div>
+                    <div class="rating-display">
+                        <div class="curry-bowls"></div>
+                        <div class="rating-number"></div>
+                    </div>
+                </div>
+                <div class="podium-block bronze-block"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restaurant List -->
+    <div class="restaurant-list" id="restaurantList">
+        <!-- List items will be added by JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state hidden">
+        <div class="empty-illustration">⭐</div>
+        <h2>Start your curry journey!</h2>
+        <p>Add your first restaurant to begin</p>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beachlands Curry Club</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="page active">
+        <div class="login-container">
+            <div class="login-box">
+                <h1>Beachlands Curry Club</h1>
+                <div id="loginFormContainer">
+                    <form id="loginForm">
+                        <div class="input-group">
+                            <label for="loginEmail">Email</label>
+                            <input type="email" id="loginEmail" name="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="loginPassword">Password</label>
+                            <input type="password" id="loginPassword" name="password" required>
+                        </div>
+                        <button type="submit" class="login-btn">Login</button>
+                        <p class="auth-switch">Don't have an account? <a href="#" id="showSignup">Sign up</a></p>
+                    </form>
+                </div>
+                <div id="signupFormContainer" class="hidden">
+                    <form id="signupForm">
+                        <div class="input-group">
+                            <label for="signupEmail">Email</label>
+                            <input type="email" id="signupEmail" name="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="signupPassword">Password</label>
+                            <input type="password" id="signupPassword" name="password" required minlength="6">
+                        </div>
+                        <div class="input-group">
+                            <label for="signupName">Display Name</label>
+                            <input type="text" id="signupName" name="name" required>
+                        </div>
+                        <button type="submit" class="login-btn">Sign Up</button>
+                        <p class="auth-switch">Already have an account? <a href="#" id="showLogin">Login</a></p>
+                    </form>
+                </div>
+                <div id="authError" class="error-message hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboardPage" class="page">
+        <!-- Tonight's Pick Section -->
+        <div id="tonightsPickSection" class="tonights-pick-section hidden">
+            <div class="tonights-pick-card">
+                <div class="tonights-pick-header">
+                    <span class="pick-icon">🍛</span>
+                    <h2>Tonight's Pick</h2>
+                </div>
+                <div class="tonights-pick-content">
+                    <h3 id="tonightsPickName">-</h3>
+                    <div class="tonights-pick-rating" id="tonightsPickRating">-</div>
+                    <button class="rate-btn" id="rateTonightsPick">Rate It Now</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="header-top">
+                <h1>Beachlands Curry Club</h1>
+                <button class="logout-btn" id="logoutBtn">Logout</button>
+            </div>
+            <div class="club-stats">
+                <div class="stat">
+                    <span class="stat-value" id="totalRestaurants">0</span>
+                    <span class="stat-label">Restaurants</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="totalRatings">0</span>
+                    <span class="stat-label">Ratings</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="overallAverage">0.0</span>
+                    <span class="stat-label">Avg Rating</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Podium Section -->
+        <div class="podium-section">
+            <div class="podium-container">
+                <div class="podium-item silver" data-rank="2">
+                    <div class="restaurant-card">
+                        <div class="rank-badge">2nd</div>
+                        <div class="restaurant-name"></div>
+                        <div class="rating-display">
+                            <div class="rating-number"></div>
+                        </div>
+                    </div>
+                    <div class="podium-block silver-block"></div>
+                </div>
+                <div class="podium-item gold" data-rank="1">
+                    <div class="restaurant-card">
+                        <div class="rank-badge">1st</div>
+                        <div class="restaurant-name"></div>
+                        <div class="rating-display">
+                            <div class="rating-number"></div>
+                        </div>
+                    </div>
+                    <div class="podium-block gold-block"></div>
+                </div>
+                <div class="podium-item bronze" data-rank="3">
+                    <div class="restaurant-card">
+                        <div class="rank-badge">3rd</div>
+                        <div class="restaurant-name"></div>
+                        <div class="rating-display">
+                            <div class="rating-number"></div>
+                        </div>
+                    </div>
+                    <div class="podium-block bronze-block"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restaurant List -->
+        <div class="restaurant-list" id="restaurantList">
+            <!-- List items will be added by JavaScript -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state">
+            <div class="empty-illustration">⭐</div>
+            <h2>Start your curry journey!</h2>
+            <p>Add your first restaurant to begin</p>
+        </div>
+
+        <!-- Floating Add Button -->
+        <button class="fab" id="addRestaurantBtn">+</button>
+    </div>
+
+    <!-- Detail/Rating Page -->
+    <div id="detailPage" class="page">
+        <div class="detail-container">
+            <button class="back-btn" id="backBtn">← Back</button>
+            <div class="detail-header">
+                <h1 class="detail-restaurant-name" id="detailRestaurantName"></h1>
+                <button class="tonight-pick-toggle" id="setTonightsPick">
+                    <span class="star-icon">⭐</span>
+                    <span id="tonightsPickText">Set as Tonight's Pick</span>
+                </button>
+            </div>
+
+            <div class="user-rating-status" id="userRatingStatus"></div>
+
+            <div class="rating-categories">
+                <div class="category-rating">
+                    <h3>Meal</h3>
+                    <div class="average-rating" id="mealAverage">Club Average: -</div>
+                    <div class="rating-input">
+                        <label>Your Rating:</label>
+                        <div class="star-rating" id="mealStars" data-category="meal">
+                            <!-- Stars will be generated by JS -->
+                        </div>
+                        <span class="rating-value" id="mealValue">0/10</span>
+                    </div>
+                </div>
+                <div class="category-rating">
+                    <h3>Bathroom</h3>
+                    <div class="average-rating" id="bathroomAverage">Club Average: -</div>
+                    <div class="rating-input">
+                        <label>Your Rating:</label>
+                        <div class="star-rating" id="bathroomStars" data-category="bathroom">
+                            <!-- Stars will be generated by JS -->
+                        </div>
+                        <span class="rating-value" id="bathroomValue">0/10</span>
+                    </div>
+                </div>
+                <div class="category-rating">
+                    <h3>Ambiance</h3>
+                    <div class="average-rating" id="ambianceAverage">Club Average: -</div>
+                    <div class="rating-input">
+                        <label>Your Rating:</label>
+                        <div class="star-rating" id="ambianceStars" data-category="ambiance">
+                            <!-- Stars will be generated by JS -->
+                        </div>
+                        <span class="rating-value" id="ambianceValue">0/10</span>
+                    </div>
+                </div>
+                <div class="category-rating">
+                    <h3>Service</h3>
+                    <div class="average-rating" id="serviceAverage">Club Average: -</div>
+                    <div class="rating-input">
+                        <label>Your Rating:</label>
+                        <div class="star-rating" id="serviceStars" data-category="service">
+                            <!-- Stars will be generated by JS -->
+                        </div>
+                        <span class="rating-value" id="serviceValue">0/10</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="submit-rating-btn" id="submitRating">Submit Rating</button>
+        </div>
+    </div>
+
+    <!-- Add Restaurant Modal -->
+    <div id="addRestaurantModal" class="modal">
+        <div class="modal-content slide-in">
+            <button class="close-modal" id="closeAddModal">×</button>
+            <h2>Add New Restaurant</h2>
+            <form id="addRestaurantForm">
+                <div class="input-group">
+                    <label for="restaurantName">Restaurant Name *</label>
+                    <input type="text" id="restaurantName" required>
+                </div>
+
+                <p class="optional-text">Optional: Rate it now or leave blank to rate later</p>
+
+                <div class="rating-input-group">
+                    <label>Meal</label>
+                    <div class="star-rating" id="addMealStars" data-category="meal">
+                        <!-- Stars will be generated by JS -->
+                    </div>
+                    <span class="rating-value" id="addMealValue">0/10</span>
+                </div>
+
+                <div class="rating-input-group">
+                    <label>Bathroom</label>
+                    <div class="star-rating" id="addBathroomStars" data-category="bathroom">
+                        <!-- Stars will be generated by JS -->
+                    </div>
+                    <span class="rating-value" id="addBathroomValue">0/10</span>
+                </div>
+
+                <div class="rating-input-group">
+                    <label>Ambiance</label>
+                    <div class="star-rating" id="addAmbianceStars" data-category="ambiance">
+                        <!-- Stars will be generated by JS -->
+                    </div>
+                    <span class="rating-value" id="addAmbianceValue">0/10</span>
+                </div>
+
+                <div class="rating-input-group">
+                    <label>Service</label>
+                    <div class="star-rating" id="addServiceStars" data-category="service">
+                        <!-- Stars will be generated by JS -->
+                    </div>
+                    <span class="rating-value" id="addServiceValue">0/10</span>
+                </div>
+
+                <button type="submit" class="submit-btn">Save Restaurant</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div id="successToast" class="toast hidden">
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="spinner hidden">
+        <div class="spinner-circle"></div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
