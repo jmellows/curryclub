@@ -55,6 +55,7 @@ let unsubscribeRestaurants = null; // Store unsubscribe function for restaurants
 let unsubscribeNotifications = null; // Store unsubscribe function for notifications listener
 let isLoadingRestaurants = false; // Prevent concurrent loads
 let previousRatingValues = { meal: 0, bathroom: 0, ambiance: 0, service: 0 }; // Track previous values for notification triggers
+let isCreatingAccount = false; // Flag to skip session tracking during account creation
 
 // Page navigation
 function showPage(pageName) {
@@ -295,8 +296,10 @@ onAuthStateChanged(auth, (user) => {
         currentUser = user;
         hideLoading();
 
-        // Track session
-        trackUserSession(user);
+        // Track session (skip if we're creating an account)
+        if (!isCreatingAccount) {
+            trackUserSession(user);
+        }
 
         // Listen for notifications
         setupNotificationListener();
@@ -625,9 +628,18 @@ async function loadNextEvent() {
                 const now = new Date();
 
                 document.getElementById('nextEventSection').classList.remove('hidden');
-                document.getElementById('nextEventName').textContent = restaurant.name.toLowerCase();
+                document.getElementById('nextEventName').textContent = restaurant.name;
                 document.getElementById('nextEventRating').textContent =
                     `${restaurant.averageRatings.overall.toFixed(1)}/10`;
+
+                // Show hosted by if provided
+                const hostedByEl = document.getElementById('nextEventHostedBy');
+                if (restaurant.hostedBy) {
+                    hostedByEl.textContent = `Hosted by ${restaurant.hostedBy}`;
+                    hostedByEl.style.display = 'block';
+                } else {
+                    hostedByEl.style.display = 'none';
+                }
 
                 // Show formatted date
                 const dateEl = document.getElementById('nextEventDate');
@@ -726,6 +738,15 @@ async function showRestaurantDetail(restaurant) {
     // Set basic info immediately
     document.getElementById('detailRestaurantName').textContent = restaurant.name;
 
+    // Show hosted by if provided
+    const detailHostedBy = document.getElementById('detailHostedBy');
+    if (restaurant.hostedBy) {
+        detailHostedBy.textContent = `Hosted by ${restaurant.hostedBy}`;
+        detailHostedBy.style.display = 'block';
+    } else {
+        detailHostedBy.style.display = 'none';
+    }
+
     // Show average ratings immediately
     document.getElementById('mealAverage').textContent =
         `${restaurant.averageRatings.meal.toFixed(1)}/10`;
@@ -811,6 +832,10 @@ async function showRestaurantDetail(restaurant) {
         document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
         document.getElementById('editEventTime').value = restaurant.eventTime || '';
         document.getElementById('editEventAddress').value = restaurant.eventAddress || '';
+
+        // Load member names and set the current hosted by value
+        await loadMemberNames('editHostedBy');
+        document.getElementById('editHostedBy').value = restaurant.hostedBy || '';
 
         eventDetailsSection.classList.remove('hidden');
 
@@ -1166,6 +1191,10 @@ document.getElementById('lockRestaurantBtn').addEventListener('click', async () 
                 document.getElementById('editEventTime').value = currentRestaurant.eventTime || '';
                 document.getElementById('editEventAddress').value = currentRestaurant.eventAddress || '';
 
+                // Load member names and set the current hosted by value
+                await loadMemberNames('editHostedBy');
+                document.getElementById('editHostedBy').value = currentRestaurant.hostedBy || '';
+
                 // Add locked styling if user is not admin
                 if (currentUser.email !== ADMIN_EMAIL) {
                     detailContainer.classList.add('locked');
@@ -1218,6 +1247,7 @@ document.getElementById('saveEventDetails').addEventListener('click', async () =
     const eventDate = document.getElementById('editEventDate').value;
     const eventTime = document.getElementById('editEventTime').value;
     const eventAddress = document.getElementById('editEventAddress').value.trim();
+    const hostedBy = document.getElementById('editHostedBy').value.trim();
 
     if (!eventDate || !eventTime) {
         showToast('Date and time are required');
@@ -1232,13 +1262,15 @@ document.getElementById('saveEventDetails').addEventListener('click', async () =
         await updateDoc(doc(db, 'restaurants', currentRestaurant.id), {
             eventDate: eventDateTime,
             eventTime: eventTime,
-            eventAddress: eventAddress || ''
+            eventAddress: eventAddress || '',
+            hostedBy: hostedBy || ''
         });
 
         // Update current restaurant object
         currentRestaurant.eventDate = eventDateTime;
         currentRestaurant.eventTime = eventTime;
         currentRestaurant.eventAddress = eventAddress || '';
+        currentRestaurant.hostedBy = hostedBy || '';
 
         hideLoading();
         showToast('Event details updated!');
@@ -1415,10 +1447,56 @@ document.getElementById('submitRating').addEventListener('click', async () => {
     await saveRatingToFirebase();
 });
 
+// Load member names for hosted by dropdown
+async function loadMemberNames(selectElementId) {
+    const selectElement = document.getElementById(selectElementId);
+    if (!selectElement) return;
+
+    try {
+        // Get all sessions to find member names
+        const sessionsSnapshot = await getDocs(collection(db, 'sessions'));
+        const members = new Set();
+
+        sessionsSnapshot.forEach(sessionDoc => {
+            const sessionData = sessionDoc.data();
+            if (sessionData.userName) {
+                members.add(sessionData.userName);
+            }
+        });
+
+        // Sort member names alphabetically
+        const sortedMembers = Array.from(members).sort();
+
+        // Keep the current selection if exists
+        const currentValue = selectElement.value;
+
+        // Clear existing options except the first one
+        selectElement.innerHTML = '<option value="">Select a member...</option>';
+
+        // Add member names as options
+        sortedMembers.forEach(memberName => {
+            const option = document.createElement('option');
+            option.value = memberName;
+            option.textContent = memberName;
+            selectElement.appendChild(option);
+        });
+
+        // Restore selection if it existed
+        if (currentValue) {
+            selectElement.value = currentValue;
+        }
+    } catch (error) {
+        console.error('Error loading member names:', error);
+    }
+}
+
 // Add restaurant modal
-document.getElementById('addRestaurantBtn').addEventListener('click', () => {
+document.getElementById('addRestaurantBtn').addEventListener('click', async () => {
     document.getElementById('addRestaurantModal').classList.add('active');
     document.getElementById('addRestaurantForm').reset();
+
+    // Load member names for the dropdown
+    await loadMemberNames('hostedBy');
 });
 
 document.getElementById('closeAddModal').addEventListener('click', () => {
@@ -1437,6 +1515,7 @@ document.getElementById('addRestaurantForm').addEventListener('submit', async (e
     const eventDate = document.getElementById('eventDate').value;
     const eventTime = document.getElementById('eventTime').value;
     const eventAddress = document.getElementById('eventAddress').value.trim();
+    const hostedBy = document.getElementById('hostedBy').value.trim();
 
     if (!name || !eventDate || !eventTime) {
         showToast('Please fill in all required fields');
@@ -1455,6 +1534,7 @@ document.getElementById('addRestaurantForm').addEventListener('submit', async (e
             eventDate: eventDateTime,
             eventTime: eventTime,
             eventAddress: eventAddress || '',
+            hostedBy: hostedBy || '',
             isLocked: true, // Auto-locked for new restaurants
             createdBy: currentUser.uid,
             createdAt: serverTimestamp()
@@ -1714,9 +1794,6 @@ async function loadAdminPage() {
 
     showLoading();
     try {
-        // Load whitelist
-        await loadWhitelist();
-
         // Load user analytics
         const sessionsSnapshot = await getDocs(collection(db, 'sessions'));
         const userAnalytics = [];
@@ -1940,6 +2017,9 @@ document.getElementById('createAccountForm').addEventListener('submit', async (e
 
     showLoading();
     try {
+        // Set flag to skip session tracking during account creation
+        isCreatingAccount = true;
+
         // Create the user account
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
@@ -1948,6 +2028,9 @@ document.getElementById('createAccountForm').addEventListener('submit', async (e
 
         // Sign the admin back in (creating account logs you in as that user)
         await signOut(auth);
+
+        // Reset flag
+        isCreatingAccount = false;
 
         hideLoading();
         showToast('Account created! Logging you back in...');
@@ -1963,6 +2046,9 @@ document.getElementById('createAccountForm').addEventListener('submit', async (e
         document.getElementById('createAccountForm').reset();
 
     } catch (error) {
+        // Reset flag on error
+        isCreatingAccount = false;
+
         hideLoading();
         console.error('Error creating account:', error);
 
@@ -1975,107 +2061,6 @@ document.getElementById('createAccountForm').addEventListener('submit', async (e
         }
     }
 });
-
-// Whitelist Management
-async function loadWhitelist() {
-    try {
-        const whitelistSnapshot = await getDocs(collection(db, 'whitelist'));
-        const tableBody = document.getElementById('whitelistTableBody');
-
-        if (whitelistSnapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #999; font-size: 14px; font-style: italic;">No whitelisted emails yet</td></tr>';
-            return;
-        }
-
-        tableBody.innerHTML = '';
-
-        // Get all user accounts to match emails with names
-        const usersSnapshot = await getDocs(collection(db, 'sessions'));
-        const userNameMap = {};
-        usersSnapshot.forEach(userDoc => {
-            const userData = userDoc.data();
-            if (userData.userName) {
-                // Try to match by userId, but we need email
-                userNameMap[userDoc.id] = userData.userName;
-            }
-        });
-
-        whitelistSnapshot.forEach(whitelistDoc => {
-            const email = whitelistDoc.id;
-            const data = whitelistDoc.data();
-
-            // Try to find name from sessions, otherwise use email prefix
-            let name = email.split('@')[0];
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td style="word-break: break-word; max-width: 150px;">${name}</td>
-                <td style="word-break: break-word; max-width: 200px;">${email}</td>
-                <td style="text-align: right;">
-                    <button
-                        class="whitelist-remove-btn"
-                        data-email="${email}"
-                        style="background: transparent; border: none; color: #dc3545; font-size: 20px; cursor: pointer; padding: 4px 8px; line-height: 1;"
-                    >×</button>
-                </td>
-            `;
-
-            // Add remove handler
-            row.querySelector('.whitelist-remove-btn').addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const emailToRemove = e.target.dataset.email;
-
-                if (confirm(`Remove ${emailToRemove} from whitelist?`)) {
-                    try {
-                        await deleteDoc(doc(db, 'whitelist', emailToRemove));
-                        showToast('Email removed from whitelist');
-                        await loadWhitelist();
-                    } catch (error) {
-                        console.error('Error removing from whitelist:', error);
-                        showToast('Error removing email');
-                    }
-                }
-            });
-
-            tableBody.appendChild(row);
-        });
-    } catch (error) {
-        console.error('Error loading whitelist:', error);
-        showToast('Error loading whitelist');
-    }
-}
-
-// Add email to whitelist - form removed from UI, whitelist now managed via CREATE USER ACCOUNT
-// document.getElementById('addWhitelistForm')?.addEventListener('submit', async (e) => {
-//     e.preventDefault();
-
-//     if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
-//         showToast('Access denied - Admin only');
-//         return;
-//     }
-
-//     const email = document.getElementById('whitelistEmail').value.trim().toLowerCase();
-
-//     if (!email) return;
-
-//     showLoading();
-//     try {
-//         // Add to whitelist collection
-//         await setDoc(doc(db, 'whitelist', email), {
-//             addedBy: currentUser.email,
-//             addedAt: serverTimestamp()
-//         });
-
-//         showToast('Email added to whitelist');
-//         document.getElementById('whitelistEmail').value = '';
-//         await loadWhitelist();
-//         hideLoading();
-//     } catch (error) {
-//         hideLoading();
-//         console.error('Error adding to whitelist:', error);
-//         showToast('Error adding email');
-//     }
-// });
 
 // Initialize
 console.log('Beachlands Curry Club initialized');

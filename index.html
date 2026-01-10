@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beachlands Curry Club</title>
-    <link rel="stylesheet" href="style.css?v=84">
+    <link rel="stylesheet" href="style.css?v=92">
 </head>
 <body>
     <!-- Login Page -->
@@ -66,6 +66,7 @@
                 </div>
                 <div class="tonights-pick-content">
                     <h2 class="tonights-pick-name" id="nextEventName">-</h2>
+                    <div class="next-event-hosted-by" id="nextEventHostedBy"></div>
                     <div class="next-event-date" id="nextEventDate"></div>
                     <div class="next-event-countdown" id="nextEventCountdown">
                         <div class="countdown-display">-</div>
@@ -309,25 +310,6 @@
                     </table>
                 </div>
             </div>
-
-            <!-- Whitelist -->
-            <div class="admin-content" style="margin-top: 24px;">
-                <h2 class="table-subtitle">WHITELIST</h2>
-                <div class="admin-table-wrapper">
-                    <table class="admin-table" id="whitelistTable">
-                        <thead>
-                            <tr>
-                                <th>NAME</th>
-                                <th>EMAIL</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="whitelistTableBody">
-                            <!-- Rows will be added by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -353,6 +335,7 @@
 
             <div class="detail-header-row">
                 <h1 class="detail-restaurant-name" id="detailRestaurantName"></h1>
+                <div class="detail-hosted-by" id="detailHostedBy"></div>
             </div>
 
             <!-- Event Details Section (shows for locked restaurants) -->
@@ -366,9 +349,15 @@
                     <label style="font-size: 14px; font-weight: 600; color: #666;">Time</label>
                     <input type="time" id="editEventTime" style="padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px;">
                 </div>
-                <div class="input-group" style="margin-bottom: 16px;">
+                <div class="input-group" style="margin-bottom: 12px;">
                     <label style="font-size: 14px; font-weight: 600; color: #666;">Address</label>
                     <input type="text" id="editEventAddress" placeholder="123 Main St, Auckland" style="padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px;">
+                </div>
+                <div class="input-group" style="margin-bottom: 16px;">
+                    <label style="font-size: 14px; font-weight: 600; color: #666;">Hosted By</label>
+                    <select id="editHostedBy" style="padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px; background: white; width: 100%;">
+                        <option value="">Select a member...</option>
+                    </select>
                 </div>
                 <button id="saveEventDetails" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #ff6b35, #f7931e); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Save Event Details</button>
             </div>
@@ -460,6 +449,13 @@
                     <input type="text" id="eventAddress" placeholder="123 Main St, Auckland">
                 </div>
 
+                <div class="input-group">
+                    <label for="hostedBy">Hosted By (Optional)</label>
+                    <select id="hostedBy" style="padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px; background: white;">
+                        <option value="">Select a member...</option>
+                    </select>
+                </div>
+
                 <p class="optional-text">Restaurant will be locked until you're ready for ratings</p>
 
                 <button type="submit" class="submit-btn">Create Event</button>
@@ -490,6 +486,6 @@
         <div class="spinner-circle"></div>
     </div>
 
-    <script type="module" src="app.js?v=86"></script>
+    <script type="module" src="app.js?v=93"></script>
 </body>
 </html>

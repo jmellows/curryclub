@@ -238,7 +238,7 @@ body {
     font-size: var(--font-h1);
     font-weight: var(--weight-bold);
     color: var(--color-text-primary);
-    text-transform: lowercase;
+    position: relative;
 }
 
 .tonights-pick-lock {
@@ -294,9 +294,14 @@ body {
     box-shadow: 0 6px 16px rgba(255, 107, 53, 0.35);
 }
 
-/* Next Event Title */
-.tonights-pick-title {
-    position: relative;
+/* Next Event Hosted By */
+.next-event-hosted-by {
+    font-size: 14px;
+    font-weight: 500;
+    color: #888;
+    text-align: center;
+    margin-bottom: 12px;
+    font-style: italic;
 }
 
 /* Next Event Date */
@@ -876,7 +881,14 @@ body {
     color: var(--color-text-primary);
     margin: 0;
     font-weight: var(--weight-bold);
-    text-transform: lowercase;
+}
+
+.detail-hosted-by {
+    font-size: 15px;
+    font-weight: 500;
+    color: #888;
+    margin-top: 8px;
+    font-style: italic;
 }
 
 .header-icons {
