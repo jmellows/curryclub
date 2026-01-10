@@ -45,14 +45,25 @@ let allRestaurants = [];
 
 // Page navigation
 function showPage(pageName) {
-    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-    document.getElementById(pageName + 'Page').classList.add('active');
+    const targetPage = document.getElementById(pageName + 'Page');
 
+    // For detail page, add flip animation class BEFORE making it active
     if (pageName === 'detail') {
-        document.getElementById('detailPage').classList.add('flip-in');
+        targetPage.classList.add('flip-in');
+        // Use requestAnimationFrame to ensure the class is applied before transition
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            targetPage.classList.add('active');
+        });
+
+        // Remove flip class after animation completes
         setTimeout(() => {
-            document.getElementById('detailPage').classList.remove('flip-in');
+            targetPage.classList.remove('flip-in');
         }, 600);
+    } else {
+        // For other pages, just do normal transition
+        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+        targetPage.classList.add('active');
     }
 }
 
