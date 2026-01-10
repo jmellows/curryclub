@@ -1067,8 +1067,9 @@ body {
     height: 32px;
     cursor: pointer;
     background: transparent;
+    opacity: 0;
+    border: 0;
     font-size: 28px;
-    border: none;
     transition: transform 0.2s;
 }
 
@@ -1088,7 +1089,8 @@ body {
     height: 32px;
     cursor: pointer;
     background: transparent;
-    border: none;
+    opacity: 0;
+    border: 0;
     font-size: 28px;
     transition: transform 0.2s;
 }
