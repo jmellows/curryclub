@@ -16,7 +16,9 @@ const mimeTypes = {
 };
 
 const server = http.createServer((req, res) => {
-    let filePath = '.' + req.url;
+    // Strip query string from URL
+    const urlWithoutQuery = req.url.split('?')[0];
+    let filePath = '.' + urlWithoutQuery;
 
     // Handle routes without file extensions
     if (filePath === './' || filePath === './dashboard' || filePath === './detail') {

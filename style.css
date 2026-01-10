@@ -13,11 +13,11 @@ body {
 
 /* Page Transitions */
 .page {
-    display: none;
+    display: none !important;
 }
 
 .page.active {
-    display: block;
+    display: block !important;
 }
 
 .hidden {
@@ -25,14 +25,14 @@ body {
 }
 
 /* Login Page Styles */
-#loginPage {
+#loginPage.active {
     min-height: 100vh;
     background-image: url('currylogo_no_background.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-color: #1a1a1a;
-    display: flex;
+    display: flex !important;
     justify-content: center;
     align-items: center;
 }
