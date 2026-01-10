@@ -428,7 +428,7 @@ async function refreshDashboardData() {
         allRestaurants.sort((a, b) => b.averageRatings.overall - a.averageRatings.overall);
 
         renderDashboard();
-        await loadTonightsPick();
+        await loadNextEvent();
     } finally {
         isLoadingRestaurants = false;
     }
@@ -445,6 +445,13 @@ async function loadDashboard() {
     const restaurantsQuery = query(collection(db, 'restaurants'));
 
     unsubscribeRestaurants = onSnapshot(restaurantsQuery, async (snapshot) => {
+        // Prevent concurrent listener executions
+        if (isLoadingRestaurants) {
+            console.log('⏭️ Skipping listener callback - already loading');
+            return;
+        }
+        isLoadingRestaurants = true;
+
         console.log('🔄 Listener fired! Restaurants in DB:', snapshot.docs.length);
         allRestaurants = [];
         uniqueMembers.clear(); // Reset unique members count
@@ -494,7 +501,9 @@ async function loadDashboard() {
         allRestaurants.sort((a, b) => b.averageRatings.overall - a.averageRatings.overall);
 
         renderDashboard();
-        await loadTonightsPick();
+        await loadNextEvent();
+
+        isLoadingRestaurants = false;
     });
 }
 
@@ -565,24 +574,81 @@ function renderDashboard() {
     }
 }
 
-// Load tonight's pick
-async function loadTonightsPick() {
+// Load next event
+let countdownInterval = null;
+async function loadNextEvent() {
     try {
+        console.log('📅 Loading Next Event...');
         const pickDoc = await getDoc(doc(db, 'tonightsPick', 'current'));
         if (pickDoc.exists() && pickDoc.data().restaurantId) {
             const restaurantId = pickDoc.data().restaurantId;
-            const restaurant = allRestaurants.find(r => r.id === restaurantId);
+            console.log('📅 Found tonightsPick restaurantId:', restaurantId);
 
-            if (restaurant) {
-                document.getElementById('tonightsPickSection').classList.remove('hidden');
-                document.getElementById('tonightsPickName').textContent = restaurant.name.toLowerCase();
-                document.getElementById('tonightsPickRating').textContent =
+            // Fetch restaurant directly from Firestore (don't use filtered allRestaurants)
+            const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
+            if (!restaurantDoc.exists()) {
+                console.log('📅 Restaurant not found in DB');
+                document.getElementById('nextEventSection').classList.add('hidden');
+                return;
+            }
+
+            const restaurantData = restaurantDoc.data();
+            console.log('📅 Restaurant data:', restaurantData);
+
+            // Get rating count
+            const ratingsSnapshot = await getDocs(collection(db, 'restaurants', restaurantId, 'ratings'));
+            const ratingCount = ratingsSnapshot.size;
+            console.log('📅 Rating count:', ratingCount);
+
+            // Build restaurant object
+            const restaurant = {
+                id: restaurantId,
+                ...restaurantData,
+                ratingCount,
+                averageRatings: {
+                    overall: 0,
+                    meal: 0,
+                    bathroom: 0,
+                    ambiance: 0,
+                    service: 0
+                }
+            };
+
+            console.log('📅 Checking conditions - eventDate:', restaurant.eventDate, 'ratingCount:', restaurant.ratingCount);
+
+            // Show locked events regardless of date - they disappear when someone rates
+            if (restaurant.eventDate && restaurant.ratingCount === 0) {
+                console.log('📅 Showing Next Event (locked, no ratings yet)');
+
+                // Convert Firestore timestamp to Date
+                const eventDate = restaurant.eventDate.toDate ? restaurant.eventDate.toDate() : new Date(restaurant.eventDate);
+                const now = new Date();
+
+                document.getElementById('nextEventSection').classList.remove('hidden');
+                document.getElementById('nextEventName').textContent = restaurant.name.toLowerCase();
+                document.getElementById('nextEventRating').textContent =
                     `${restaurant.averageRatings.overall.toFixed(1)}/10`;
+
+                // Show formatted date
+                const dateEl = document.getElementById('nextEventDate');
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const formattedDate = eventDate.toLocaleDateString('en-US', options);
+                const formattedTime = restaurant.eventTime || eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                dateEl.textContent = `${formattedDate} at ${formattedTime}`;
+
+                // Show address if provided
+                const addressEl = document.getElementById('nextEventAddress');
+                if (restaurant.eventAddress) {
+                    addressEl.textContent = `📍 ${restaurant.eventAddress}`;
+                    addressEl.style.display = 'block';
+                } else {
+                    addressEl.style.display = 'none';
+                }
 
                 // Check if restaurant is locked
                 const isLocked = restaurant.isLocked || false;
-                const lockIcon = document.getElementById('tonightsPickLock');
-                const rateButton = document.getElementById('rateTonightsPick');
+                const lockIcon = document.getElementById('nextEventLock');
+                const rateButton = document.getElementById('rateNextEvent');
 
                 if (isLocked) {
                     lockIcon.textContent = '🔒';
@@ -592,15 +658,64 @@ async function loadTonightsPick() {
                     rateButton.style.display = 'inline-block';
                 }
 
-                document.getElementById('rateTonightsPick').onclick = () => showRestaurantDetail(restaurant);
+                // Start countdown timer
+                if (countdownInterval) clearInterval(countdownInterval);
+
+                const updateCountdown = () => {
+                    const now = new Date();
+                    const diff = eventDate - now;
+
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    let countdownText = '';
+                    if (diff > 0) {
+                        // Future event
+                        if (days > 0) {
+                            countdownText = `${days} day${days !== 1 ? 's' : ''}, ${hours} hour${hours !== 1 ? 's' : ''} until event`;
+                        } else if (hours > 0) {
+                            countdownText = `${hours} hour${hours !== 1 ? 's' : ''}, ${minutes} minute${minutes !== 1 ? 's' : ''} until event`;
+                        } else {
+                            countdownText = `${minutes} minute${minutes !== 1 ? 's' : ''}, ${seconds} second${seconds !== 1 ? 's' : ''} until event`;
+                        }
+                    } else {
+                        // Past event - show how long ago
+                        const absDays = Math.abs(days);
+                        const absHours = Math.abs(hours);
+                        const absMinutes = Math.abs(minutes);
+
+                        if (absDays > 0) {
+                            countdownText = `event was ${absDays} day${absDays !== 1 ? 's' : ''} ago`;
+                        } else if (absHours > 0) {
+                            countdownText = `event was ${absHours} hour${absHours !== 1 ? 's' : ''} ago`;
+                        } else if (absMinutes > 0) {
+                            countdownText = `event was ${absMinutes} minute${absMinutes !== 1 ? 's' : ''} ago`;
+                        } else {
+                            countdownText = `event happening now!`;
+                        }
+                    }
+
+                    document.querySelector('#nextEventCountdown .countdown-display').textContent = countdownText;
+                };
+
+                updateCountdown();
+                countdownInterval = setInterval(updateCountdown, 1000);
+
+                // Make entire Next Event card clickable
+                document.getElementById('nextEventCard').onclick = () => showRestaurantDetail(restaurant);
+                document.getElementById('rateNextEvent').onclick = () => showRestaurantDetail(restaurant);
             } else {
-                document.getElementById('tonightsPickSection').classList.add('hidden');
+                console.log('📅 No eventDate or ratingCount > 0 - hiding');
+                document.getElementById('nextEventSection').classList.add('hidden');
             }
         } else {
-            document.getElementById('tonightsPickSection').classList.add('hidden');
+            console.log('📅 No tonightsPick set - hiding');
+            document.getElementById('nextEventSection').classList.add('hidden');
         }
     } catch (error) {
-        console.error('Error loading tonight\'s pick:', error);
+        console.error('📅 Error loading next event:', error);
     }
 }
 
@@ -651,13 +766,16 @@ async function showRestaurantDetail(restaurant) {
     // Show/hide admin buttons for admin only
     const deleteBtn = document.getElementById('deleteRestaurantBtn');
     const lockBtn = document.getElementById('lockRestaurantBtn');
+    const starBtn = document.getElementById('setNextEvent');
 
     if (currentUser && currentUser.email === ADMIN_EMAIL) {
         deleteBtn.classList.remove('hidden');
         lockBtn.classList.remove('hidden');
+        starBtn.classList.remove('hidden');
     } else {
         deleteBtn.classList.add('hidden');
         lockBtn.classList.add('hidden');
+        starBtn.classList.add('hidden');
     }
 
     // Check if restaurant is locked and disable sliders
@@ -682,17 +800,45 @@ async function showRestaurantDetail(restaurant) {
         lockBtn.classList.remove('locked');
     }
 
+    // Show/hide event details section for locked restaurants with event data
+    const eventDetailsSection = document.getElementById('eventDetailsSection');
+    const detailContainer = document.querySelector('.detail-container');
+    const overallAverageDisplay = document.getElementById('overallAverageDisplay');
+
+    if (isLocked && restaurant.eventDate) {
+        // Populate event detail fields
+        const eventDate = restaurant.eventDate.toDate ? restaurant.eventDate.toDate() : new Date(restaurant.eventDate);
+        document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
+        document.getElementById('editEventTime').value = restaurant.eventTime || '';
+        document.getElementById('editEventAddress').value = restaurant.eventAddress || '';
+
+        eventDetailsSection.classList.remove('hidden');
+
+        // Add locked styling if user is not admin
+        if (currentUser.email !== ADMIN_EMAIL) {
+            detailContainer.classList.add('locked');
+            overallAverageDisplay.classList.add('locked');
+        } else {
+            detailContainer.classList.remove('locked');
+            overallAverageDisplay.classList.remove('locked');
+        }
+    } else {
+        eventDetailsSection.classList.add('hidden');
+        detailContainer.classList.remove('locked');
+        overallAverageDisplay.classList.remove('locked');
+    }
+
     // FLIP TO DETAIL PAGE IMMEDIATELY
     showPage('detail');
 
     // Load data in background while flip animation plays
-    // Check if this is tonight's pick
+    // Check if this is next event
     getDoc(doc(db, 'tonightsPick', 'current')).then(pickDoc => {
-        const isTonightsPick = pickDoc.exists() && pickDoc.data().restaurantId === restaurant.id;
+        const isNextEvent = pickDoc.exists() && pickDoc.data().restaurantId === restaurant.id;
 
-        const toggleBtn = document.getElementById('setTonightsPick');
+        const toggleBtn = document.getElementById('setNextEvent');
 
-        if (isTonightsPick) {
+        if (isNextEvent) {
             toggleBtn.classList.add('active');
             toggleBtn.textContent = '⭐';
         } else {
@@ -700,7 +846,7 @@ async function showRestaurantDetail(restaurant) {
             toggleBtn.textContent = '☆';
         }
     }).catch(error => {
-        console.error('Error checking tonight\'s pick:', error);
+        console.error('Error checking next event:', error);
     });
 
     // Load user's rating if exists
@@ -763,7 +909,7 @@ async function showRestaurantDetail(restaurant) {
                     slider.dispatchEvent(new Event('input'));
                 });
 
-                document.getElementById('overallAverageValue').textContent = `${currentRestaurant.averageRatings.overall.toFixed(1)}/10 (locked - community average)`;
+                document.getElementById('overallAverageValue').textContent = 'locked';
             } else {
                 document.getElementById('overallAverageValue').textContent = 'Not rated yet - move all 4 sliders to rate';
             }
@@ -945,37 +1091,38 @@ async function loadMembersPage() {
 }
 
 
-// Set/remove tonight's pick
-document.getElementById('setTonightsPick').addEventListener('click', async () => {
+// Set/remove next event
+document.getElementById('setNextEvent').addEventListener('click', async () => {
     if (!currentRestaurant) return;
 
     try {
         const pickDoc = await getDoc(doc(db, 'tonightsPick', 'current'));
-        const isTonightsPick = pickDoc.exists() && pickDoc.data().restaurantId === currentRestaurant.id;
+        const isNextEvent = pickDoc.exists() && pickDoc.data().restaurantId === currentRestaurant.id;
 
-        if (isTonightsPick) {
-            // Remove from tonight's pick
+        if (isNextEvent) {
+            // Remove from next event
             await setDoc(doc(db, 'tonightsPick', 'current'), { restaurantId: null });
-            showToast('Removed from Tonight\'s Pick');
+            showToast('Removed from Next Event');
 
-            document.getElementById('setTonightsPick').classList.remove('active');
-            document.getElementById('setTonightsPick').textContent = '☆';
+            document.getElementById('setNextEvent').classList.remove('active');
+            document.getElementById('setNextEvent').textContent = '☆';
         } else {
-            // Set as tonight's pick
+            // Set as next event
             await setDoc(doc(db, 'tonightsPick', 'current'), {
                 restaurantId: currentRestaurant.id,
-                updatedAt: serverTimestamp()
+                setBy: currentUser.uid,
+                setAt: serverTimestamp()
             });
-            showToast('Set as Tonight\'s Pick!');
+            showToast('Set as Next Event!');
 
-            document.getElementById('setTonightsPick').classList.add('active');
-            document.getElementById('setTonightsPick').textContent = '⭐';
+            document.getElementById('setNextEvent').classList.add('active');
+            document.getElementById('setNextEvent').textContent = '⭐';
         }
 
-        await loadTonightsPick();
+        await loadNextEvent();
     } catch (error) {
-        console.error('Error toggling tonight\'s pick:', error);
-        showToast('Error updating Tonight\'s Pick');
+        console.error('Error toggling next event:', error);
+        showToast('Error updating Next Event');
     }
 });
 
@@ -1002,15 +1149,50 @@ document.getElementById('lockRestaurantBtn').addEventListener('click', async () 
         // Update UI
         const lockBtn = document.getElementById('lockRestaurantBtn');
         const sliders = ['mealSlider', 'bathroomSlider', 'ambianceSlider', 'serviceSlider'];
+        const detailContainer = document.querySelector('.detail-container');
+        const overallAverageDisplay = document.getElementById('overallAverageDisplay');
+        const eventDetailsSection = document.getElementById('eventDetailsSection');
 
         if (newLockStatus) {
             lockBtn.textContent = '🔒';
             lockBtn.classList.add('locked');
             showToast(`${currentRestaurant.name} is now locked - users cannot rate`);
+
+            // Show event details if restaurant has event data
+            if (currentRestaurant.eventDate) {
+                eventDetailsSection.classList.remove('hidden');
+                const eventDate = currentRestaurant.eventDate.toDate ? currentRestaurant.eventDate.toDate() : new Date(currentRestaurant.eventDate);
+                document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
+                document.getElementById('editEventTime').value = currentRestaurant.eventTime || '';
+                document.getElementById('editEventAddress').value = currentRestaurant.eventAddress || '';
+
+                // Add locked styling if user is not admin
+                if (currentUser.email !== ADMIN_EMAIL) {
+                    detailContainer.classList.add('locked');
+                    overallAverageDisplay.classList.add('locked');
+                    document.getElementById('overallAverageValue').textContent = 'locked';
+                } else {
+                    detailContainer.classList.remove('locked');
+                    overallAverageDisplay.classList.remove('locked');
+                }
+            }
         } else {
             lockBtn.textContent = '🔓';
             lockBtn.classList.remove('locked');
             showToast(`${currentRestaurant.name} is now unlocked - users can rate`);
+
+            // Hide event details and remove locked styling
+            eventDetailsSection.classList.add('hidden');
+            detailContainer.classList.remove('locked');
+            overallAverageDisplay.classList.remove('locked');
+
+            // Reset overall average text
+            if (currentUserRating) {
+                const overallAvg = ((currentUserRating.meal + currentUserRating.bathroom + currentUserRating.ambiance + currentUserRating.service) / 4).toFixed(1);
+                document.getElementById('overallAverageValue').textContent = `${overallAvg}/10`;
+            } else {
+                document.getElementById('overallAverageValue').textContent = 'Not rated yet - move all 4 sliders to rate';
+            }
         }
 
         // Update slider disabled state (admin can always rate)
@@ -1026,6 +1208,47 @@ document.getElementById('lockRestaurantBtn').addEventListener('click', async () 
     } catch (error) {
         console.error('Error toggling lock:', error);
         showToast('Error updating lock status');
+    }
+});
+
+// Save event details
+document.getElementById('saveEventDetails').addEventListener('click', async () => {
+    if (!currentRestaurant) return;
+
+    const eventDate = document.getElementById('editEventDate').value;
+    const eventTime = document.getElementById('editEventTime').value;
+    const eventAddress = document.getElementById('editEventAddress').value.trim();
+
+    if (!eventDate || !eventTime) {
+        showToast('Date and time are required');
+        return;
+    }
+
+    // Combine date and time into a single timestamp
+    const eventDateTime = new Date(`${eventDate}T${eventTime}`);
+
+    showLoading();
+    try {
+        await updateDoc(doc(db, 'restaurants', currentRestaurant.id), {
+            eventDate: eventDateTime,
+            eventTime: eventTime,
+            eventAddress: eventAddress || ''
+        });
+
+        // Update current restaurant object
+        currentRestaurant.eventDate = eventDateTime;
+        currentRestaurant.eventTime = eventTime;
+        currentRestaurant.eventAddress = eventAddress || '';
+
+        hideLoading();
+        showToast('Event details updated!');
+
+        // Refresh Next Event display
+        await loadNextEvent();
+    } catch (error) {
+        hideLoading();
+        console.error('Error saving event details:', error);
+        showToast('Error updating event details');
     }
 });
 
@@ -1195,18 +1418,7 @@ document.getElementById('submitRating').addEventListener('click', async () => {
 // Add restaurant modal
 document.getElementById('addRestaurantBtn').addEventListener('click', () => {
     document.getElementById('addRestaurantModal').classList.add('active');
-    document.getElementById('restaurantName').value = '';
-
-    // Reset star ratings
-    createStarRating('addMealStars', 0);
-    createStarRating('addServiceStars', 0);
-    createStarRating('addAmbianceStars', 0);
-    createStarRating('addBathroomStars', 0);
-
-    document.getElementById('addMealValue').textContent = '0/10';
-    document.getElementById('addServiceValue').textContent = '0/10';
-    document.getElementById('addAmbianceValue').textContent = '0/10';
-    document.getElementById('addBathroomValue').textContent = '0/10';
+    document.getElementById('addRestaurantForm').reset();
 });
 
 document.getElementById('closeAddModal').addEventListener('click', () => {
@@ -1222,45 +1434,50 @@ document.getElementById('addRestaurantForm').addEventListener('submit', async (e
     isSubmittingRestaurant = true;
 
     const name = document.getElementById('restaurantName').value.trim();
-    if (!name) {
+    const eventDate = document.getElementById('eventDate').value;
+    const eventTime = document.getElementById('eventTime').value;
+    const eventAddress = document.getElementById('eventAddress').value.trim();
+
+    if (!name || !eventDate || !eventTime) {
+        showToast('Please fill in all required fields');
         isSubmittingRestaurant = false;
         return;
     }
 
-    const meal = document.querySelectorAll('#addMealStars .star.filled').length;
-    const bathroom = document.querySelectorAll('#addBathroomStars .star.filled').length;
-    const ambiance = document.querySelectorAll('#addAmbianceStars .star.filled').length;
-    const service = document.querySelectorAll('#addServiceStars .star.filled').length;
+    // Combine date and time into a single timestamp
+    const eventDateTime = new Date(`${eventDate}T${eventTime}`);
 
     showLoading();
     try {
-        // Add restaurant
+        // Add restaurant (auto-locked)
         const restaurantRef = await addDoc(collection(db, 'restaurants'), {
             name,
+            eventDate: eventDateTime,
+            eventTime: eventTime,
+            eventAddress: eventAddress || '',
+            isLocked: true, // Auto-locked for new restaurants
             createdBy: currentUser.uid,
             createdAt: serverTimestamp()
         });
 
-        // Add rating if provided
-        if (meal > 0 && bathroom > 0 && ambiance > 0 && service > 0) {
-            await setDoc(doc(db, 'restaurants', restaurantRef.id, 'ratings', currentUser.uid), {
-                meal,
-                bathroom,
-                ambiance,
-                service,
-                userId: currentUser.uid,
-                userName: currentUser.displayName || currentUser.email,
-                updatedAt: serverTimestamp()
-            });
-        }
+        // Automatically set as Next Event (tonightsPick)
+        await setDoc(doc(db, 'tonightsPick', 'current'), {
+            restaurantId: restaurantRef.id,
+            setBy: currentUser.uid,
+            setAt: serverTimestamp()
+        });
+
+        // Reload to show Next Event
+        await loadNextEvent();
 
         hideLoading();
         document.getElementById('addRestaurantModal').classList.remove('active');
-        showToast('Restaurant added!');
+        document.getElementById('addRestaurantForm').reset();
+        showToast('Event created! Restaurant is locked until ready for ratings.');
     } catch (error) {
         hideLoading();
         console.error('Error adding restaurant:', error);
-        showToast('Error adding restaurant');
+        showToast('Error creating event');
     } finally {
         isSubmittingRestaurant = false;
     }

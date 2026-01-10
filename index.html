@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beachlands Curry Club</title>
-    <link rel="stylesheet" href="style.css?v=77">
+    <link rel="stylesheet" href="style.css?v=84">
 </head>
 <body>
     <!-- Login Page -->
@@ -56,21 +56,26 @@
 
     <!-- Dashboard Page -->
     <div id="dashboardPage" class="page">
-        <!-- Tonight's Pick Section -->
-        <div id="tonightsPickSection" class="tonights-pick-section hidden">
-            <div class="tonights-pick-card">
+        <!-- Next Event Section -->
+        <div id="nextEventSection" class="tonights-pick-section hidden">
+            <div class="tonights-pick-card" id="nextEventCard" style="cursor: pointer;">
                 <div class="tonights-pick-header">
                     <span class="pick-icon">🍛</span>
-                    <h1 class="tonights-pick-title">tonight's pick</h1>
-                    <span class="tonights-pick-lock" id="tonightsPickLock"></span>
+                    <h1 class="tonights-pick-title">Next Event</h1>
+                    <span class="tonights-pick-lock" id="nextEventLock"></span>
                 </div>
                 <div class="tonights-pick-content">
-                    <h2 class="tonights-pick-name" id="tonightsPickName">-</h2>
+                    <h2 class="tonights-pick-name" id="nextEventName">-</h2>
+                    <div class="next-event-date" id="nextEventDate"></div>
+                    <div class="next-event-countdown" id="nextEventCountdown">
+                        <div class="countdown-display">-</div>
+                    </div>
+                    <div class="next-event-address" id="nextEventAddress"></div>
                     <div class="tonights-pick-rating-wrapper">
                         <span class="tonights-pick-label">CLUB AVERAGE</span>
-                        <div class="tonights-pick-rating" id="tonightsPickRating">-</div>
+                        <div class="tonights-pick-rating" id="nextEventRating">-</div>
                     </div>
-                    <button class="rate-btn" id="rateTonightsPick">RATE IT NOW</button>
+                    <button class="rate-btn" id="rateNextEvent">VIEW DETAILS</button>
                 </div>
             </div>
         </div>
@@ -334,7 +339,7 @@
                     ←
                 </button>
                 <div class="header-icons">
-                    <button class="tonight-pick-star" id="setTonightsPick" title="Tonight's Pick">
+                    <button class="tonight-pick-star hidden" id="setNextEvent" title="Set as Next Event">
                         ☆
                     </button>
                     <button class="lock-restaurant-btn hidden" id="lockRestaurantBtn" title="Lock/Unlock Rating">
@@ -348,6 +353,24 @@
 
             <div class="detail-header-row">
                 <h1 class="detail-restaurant-name" id="detailRestaurantName"></h1>
+            </div>
+
+            <!-- Event Details Section (shows for locked restaurants) -->
+            <div id="eventDetailsSection" class="event-details-section hidden">
+                <h3 style="font-size: 16px; font-weight: 600; color: #666; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Event Details</h3>
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 14px; font-weight: 600; color: #666;">Date</label>
+                    <input type="date" id="editEventDate" style="padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px;">
+                </div>
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 14px; font-weight: 600; color: #666;">Time</label>
+                    <input type="time" id="editEventTime" style="padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px;">
+                </div>
+                <div class="input-group" style="margin-bottom: 16px;">
+                    <label style="font-size: 14px; font-weight: 600; color: #666;">Address</label>
+                    <input type="text" id="editEventAddress" placeholder="123 Main St, Auckland" style="padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px;">
+                </div>
+                <button id="saveEventDetails" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #ff6b35, #f7931e); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Save Event Details</button>
             </div>
 
             <div class="overall-average-display" id="overallAverageDisplay">
@@ -422,41 +445,24 @@
                     <input type="text" id="restaurantName" required>
                 </div>
 
-                <p class="optional-text">Optional: Rate it now or leave blank to rate later</p>
-
-                <div class="rating-input-group">
-                    <label>Meal</label>
-                    <div class="star-rating" id="addMealStars" data-category="meal">
-                        <!-- Stars will be generated by JS -->
-                    </div>
-                    <span class="rating-value" id="addMealValue">0/10</span>
+                <div class="input-group">
+                    <label for="eventDate">Event Date *</label>
+                    <input type="date" id="eventDate" required>
                 </div>
 
-                <div class="rating-input-group">
-                    <label>Service</label>
-                    <div class="star-rating" id="addServiceStars" data-category="service">
-                        <!-- Stars will be generated by JS -->
-                    </div>
-                    <span class="rating-value" id="addServiceValue">0/10</span>
+                <div class="input-group">
+                    <label for="eventTime">Event Time *</label>
+                    <input type="time" id="eventTime" required>
                 </div>
 
-                <div class="rating-input-group">
-                    <label>Ambiance</label>
-                    <div class="star-rating" id="addAmbianceStars" data-category="ambiance">
-                        <!-- Stars will be generated by JS -->
-                    </div>
-                    <span class="rating-value" id="addAmbianceValue">0/10</span>
+                <div class="input-group">
+                    <label for="eventAddress">Venue Address (Optional)</label>
+                    <input type="text" id="eventAddress" placeholder="123 Main St, Auckland">
                 </div>
 
-                <div class="rating-input-group">
-                    <label>Bathroom</label>
-                    <div class="star-rating" id="addBathroomStars" data-category="bathroom">
-                        <!-- Stars will be generated by JS -->
-                    </div>
-                    <span class="rating-value" id="addBathroomValue">0/10</span>
-                </div>
+                <p class="optional-text">Restaurant will be locked until you're ready for ratings</p>
 
-                <button type="submit" class="submit-btn">Save Restaurant</button>
+                <button type="submit" class="submit-btn">Create Event</button>
             </form>
         </div>
     </div>
@@ -484,6 +490,6 @@
         <div class="spinner-circle"></div>
     </div>
 
-    <script type="module" src="app.js?v=77"></script>
+    <script type="module" src="app.js?v=86"></script>
 </body>
 </html>

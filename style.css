@@ -294,6 +294,53 @@ body {
     box-shadow: 0 6px 16px rgba(255, 107, 53, 0.35);
 }
 
+/* Next Event Title */
+.tonights-pick-title {
+    position: relative;
+}
+
+/* Next Event Date */
+.next-event-date {
+    font-size: 15px;
+    font-weight: 600;
+    color: #666;
+    text-align: center;
+    margin-bottom: 12px;
+    padding: 8px 16px;
+    background: #f7f7f7;
+    border-radius: 8px;
+    border-left: 4px solid #ff6b35;
+}
+
+/* Next Event Countdown */
+.next-event-countdown {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    border-radius: 16px;
+    padding: 16px 24px;
+    margin-bottom: var(--space-md);
+    text-align: center;
+}
+
+.countdown-display {
+    font-size: 18px;
+    font-weight: var(--weight-bold);
+    color: white;
+    text-transform: lowercase;
+    letter-spacing: 0.3px;
+}
+
+/* Next Event Address */
+.next-event-address {
+    font-size: 15px;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-md);
+    text-align: center;
+    padding: 12px;
+    background: #faf8f3;
+    border-radius: 12px;
+    border: 1px solid #f0f0f0;
+}
+
 /* Dashboard Header */
 .dashboard-header {
     background: linear-gradient(135deg, #ff6b35, #f7931e);
@@ -893,6 +940,15 @@ body {
     opacity: 1;
 }
 
+/* Event Details Section */
+.event-details-section {
+    background: #faf8f3;
+    border: 2px solid #e5e5e5;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
 .overall-average-display {
     background: linear-gradient(135deg, #ff6b35, #f7931e);
     padding: 24px;
@@ -900,6 +956,22 @@ body {
     margin-bottom: 24px;
     text-align: center;
     box-shadow: 0 6px 20px rgba(255, 107, 53, 0.25);
+}
+
+/* Add extra spacing when overall average follows event details */
+.event-details-section + .overall-average-display {
+    margin-top: 32px;
+}
+
+/* Greyed out/locked state for ratings */
+.overall-average-display.locked {
+    background: linear-gradient(135deg, #999, #888);
+    opacity: 0.7;
+}
+
+.detail-container.locked .rating-category {
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .overall-label {
