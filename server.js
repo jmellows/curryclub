@@ -25,6 +25,8 @@ const server = http.createServer((req, res) => {
         filePath = './dashboard.html';
     } else if (filePath === './detail') {
         filePath = './detail.html';
+    } else if (filePath === './admin') {
+        filePath = './admin.html';
     }
 
     const extname = String(path.extname(filePath)).toLowerCase();

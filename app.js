@@ -121,6 +121,19 @@ document.getElementById('signupForm')?.addEventListener('submit', async (e) => {
 
     showLoading();
     try {
+        // Check if email is whitelisted
+        const emailLower = email.toLowerCase();
+        const whitelistDoc = await getDoc(doc(db, 'whitelist', emailLower));
+
+        if (!whitelistDoc.exists()) {
+            hideLoading();
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = 'This email is not authorized to join. Please contact the admin for access.';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+
+        // Email is whitelisted, proceed with signup
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
         // onAuthStateChanged will handle the redirect

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Beachlands Curry Club</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .admin-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .admin-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .admin-section h2 {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .add-email-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .add-email-form input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .add-email-form button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .whitelist-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .whitelist-table th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .whitelist-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #ff6b35;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <a href="/" class="back-link">← Back to Dashboard</a>
+
+        <div class="admin-header">
+            <h1>Admin Panel</h1>
+            <p>Manage whitelisted emails for Beachlands Curry Club</p>
+        </div>
+
+        <div class="admin-section">
+            <h2>Add New Email</h2>
+            <form class="add-email-form" id="addEmailForm">
+                <input
+                    type="email"
+                    id="newEmail"
+                    placeholder="Enter email address"
+                    required
+                >
+                <button type="submit">Add Email</button>
+            </form>
+        </div>
+
+        <div class="admin-section">
+            <h2>Whitelisted Emails</h2>
+            <div id="whitelistContainer">
+                <p class="empty-message">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div id="successToast" class="toast hidden">
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="spinner hidden">
+        <div class="spinner-circle"></div>
+    </div>
+
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
