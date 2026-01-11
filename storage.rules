@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Event photos - only authenticated attendees can upload
+    match /event-photos/{restaurantId}/{filename} {
+      // Anyone authenticated can read photos
+      allow read: if request.auth != null;
+
+      // Only authenticated users can upload (max 5MB per file)
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+
+      // Users can delete their own photos (filename starts with their uid)
+      allow delete: if request.auth != null
+                    && filename.matches(request.auth.uid + '_.*');
+
+      // Admin can delete any photos
+      allow delete: if request.auth != null
+                    && request.auth.token.email == 'jmellowsjnr@gmail.com';
+    }
+  }
+}

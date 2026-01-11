@@ -1188,6 +1188,204 @@ body {
     margin-bottom: 24px;
 }
 
+/* Event Photos Section */
+.event-photos-section {
+    margin-bottom: 24px;
+}
+
+.photos-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.photo-upload-area {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.upload-photo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: linear-gradient(180deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
+}
+
+.upload-photo-btn:hover {
+    background: linear-gradient(180deg, #0056b3, #004085);
+    transform: translateY(-1px);
+}
+
+.photo-count {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.upload-hint {
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+}
+
+.photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.photo-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.delete-photo-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: all 0.2s ease;
+    opacity: 0;
+}
+
+.photo-item:hover .delete-photo-btn {
+    opacity: 1;
+}
+
+.delete-photo-btn:hover {
+    background: #dc3545;
+    transform: scale(1.1);
+}
+
+.photo-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    color: white;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Storage Stats */
+.storage-stats-card {
+    background: #f7f7f7;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.storage-bar-container {
+    width: 100%;
+    height: 24px;
+    background: #e5e5e5;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.storage-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.storage-bar.warning {
+    background: linear-gradient(90deg, #ffc107, #ff9800);
+}
+
+.storage-bar.danger {
+    background: linear-gradient(90deg, #dc3545, #c82333);
+}
+
+.storage-info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.storage-stat {
+    text-align: center;
+}
+
+.storage-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.storage-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+}
+
+.storage-warning {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.storage-warning.amber {
+    background: #fff3cd;
+    color: #856404;
+    border: 2px solid #ffc107;
+}
+
+.storage-warning.red {
+    background: #f8d7da;
+    color: #721c24;
+    border: 2px solid #dc3545;
+}
+
 /* Rating Report Section */
 .rating-report-section {
     margin-bottom: 24px;

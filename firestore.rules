@@ -81,5 +81,25 @@ service cloud.firestore {
       // Admin can delete reports
       allow delete: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
     }
+
+    // Event Photos collection - for photo uploads
+    match /eventPhotos/{restaurantId}/photos/{photoId} {
+      // Any authenticated user can read photos
+      allow read: if request.auth != null;
+      // Only attendees can create photos (must be their own userId)
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Users can delete their own photos
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Admin can delete any photos
+      allow delete: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
+    }
+
+    // Storage Tracking collection - for monitoring storage usage
+    match /storageTracking/{document=**} {
+      // Any authenticated user can read storage stats
+      allow read: if request.auth != null;
+      // Any authenticated user can write (for tracking uploads)
+      allow write: if request.auth != null;
+    }
   }
 }

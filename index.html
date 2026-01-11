@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beachlands Curry Club</title>
-    <link rel="stylesheet" href="style.css?v=100">
+    <link rel="stylesheet" href="style.css?v=101">
 </head>
 <body>
     <!-- Login Page -->
@@ -374,6 +374,31 @@
                 </p>
             </div>
 
+            <!-- Storage Usage -->
+            <div class="admin-content" style="margin-bottom: 24px;">
+                <h2 class="table-subtitle">STORAGE USAGE</h2>
+                <div class="storage-stats-card">
+                    <div class="storage-bar-container">
+                        <div class="storage-bar" id="storageBar"></div>
+                    </div>
+                    <div class="storage-info">
+                        <div class="storage-stat">
+                            <span class="storage-label">Used:</span>
+                            <span class="storage-value" id="storageUsed">0 MB</span>
+                        </div>
+                        <div class="storage-stat">
+                            <span class="storage-label">Free Tier Limit:</span>
+                            <span class="storage-value">1024 MB</span>
+                        </div>
+                        <div class="storage-stat">
+                            <span class="storage-label">Total Photos:</span>
+                            <span class="storage-value" id="totalPhotos">0</span>
+                        </div>
+                    </div>
+                    <div id="storageWarning" class="storage-warning hidden"></div>
+                </div>
+            </div>
+
             <!-- User Analytics -->
             <div class="admin-content">
                 <h2 class="table-subtitle">USER ACTIVITY</h2>
@@ -476,6 +501,24 @@
             <div id="markAttendanceSection" class="mark-attendance-section hidden">
                 <button id="markAttendanceBtn" class="mark-attendance-btn">MARK AS ATTENDED</button>
                 <div class="attendance-status" id="attendanceStatus"></div>
+            </div>
+
+            <!-- Event Photos Section -->
+            <div id="eventPhotosSection" class="event-photos-section hidden">
+                <h3 class="photos-title">📸 EVENT PHOTOS</h3>
+
+                <!-- Upload Area (only for attendees) -->
+                <div id="photoUploadArea" class="photo-upload-area hidden">
+                    <input type="file" id="photoInput" accept="image/*" style="display: none;" multiple>
+                    <button class="upload-photo-btn" id="uploadPhotoBtn">
+                        <span>📷 UPLOAD PHOTOS</span>
+                        <span class="photo-count" id="photoCount">(0/3)</span>
+                    </button>
+                    <p class="upload-hint">Max 3 photos • Images will be compressed</p>
+                </div>
+
+                <!-- Photo Gallery -->
+                <div id="photoGallery" class="photo-gallery"></div>
             </div>
 
             <!-- Rating Report Section -->
@@ -683,6 +726,6 @@
         <div class="spinner-circle"></div>
     </div>
 
-    <script type="module" src="app.js?v=114"></script>
+    <script type="module" src="app.js?v=115"></script>
 </body>
 </html>

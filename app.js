@@ -26,6 +26,14 @@ import {
     serverTimestamp,
     orderBy
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import {
+    getStorage,
+    ref,
+    uploadBytes,
+    getDownloadURL,
+    deleteObject,
+    listAll
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -41,6 +49,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 // Admin email - only this user can delete restaurants
 const ADMIN_EMAIL = "jmellowsjnr@gmail.com"; // Change this to your admin email
@@ -889,6 +898,9 @@ async function showRestaurantDetail(restaurant) {
     // Load and display rating report if one exists
     await loadRatingReport(restaurant.id);
 
+    // Setup event photos section
+    await setupEventPhotos(restaurant);
+
     // Load data in background while flip animation plays
     // Check if this is next event
     getDoc(doc(db, 'tonightsPick', 'current')).then(pickDoc => {
@@ -1011,6 +1023,348 @@ async function showRestaurantDetail(restaurant) {
         console.error('❌ Error loading user rating:', error);
         console.error('Error details:', error.message, error.code);
     });
+}
+
+// ========================================
+// EVENT PHOTOS FUNCTIONALITY
+// ========================================
+
+// Setup event photos section
+async function setupEventPhotos(restaurant) {
+    const photosSection = document.getElementById('eventPhotosSection');
+    const uploadArea = document.getElementById('photoUploadArea');
+    const photoInput = document.getElementById('photoInput');
+    const uploadBtn = document.getElementById('uploadPhotoBtn');
+    const photoCount = document.getElementById('photoCount');
+
+    // Only show photos section for events (locked restaurants with event date)
+    if (!restaurant.isLocked || !restaurant.eventDate) {
+        photosSection.classList.add('hidden');
+        return;
+    }
+
+    photosSection.classList.remove('hidden');
+
+    // Check if user is an attendee (RSVP'd and marked attendance)
+    if (currentUser) {
+        try {
+            const attendeeDoc = await getDoc(doc(db, 'eventAttendees', restaurant.id, 'attendees', currentUser.uid));
+            const isAttendee = attendeeDoc.exists() && attendeeDoc.data().attended === true;
+
+            if (isAttendee) {
+                uploadArea.classList.remove('hidden');
+
+                // Get user's photo count
+                const photosSnapshot = await getDocs(
+                    query(
+                        collection(db, 'eventPhotos', restaurant.id, 'photos'),
+                        orderBy('timestamp', 'desc')
+                    )
+                );
+
+                const userPhotos = photosSnapshot.docs.filter(doc => doc.data().userId === currentUser.uid);
+                const userPhotoCount = userPhotos.length;
+                const remaining = 3 - userPhotoCount;
+
+                photoCount.textContent = `(${userPhotoCount}/3)`;
+
+                // Disable upload if user has 3 photos
+                if (userPhotoCount >= 3) {
+                    uploadBtn.disabled = true;
+                    uploadBtn.style.opacity = '0.5';
+                    uploadBtn.style.cursor = 'not-allowed';
+                } else {
+                    uploadBtn.disabled = false;
+                    uploadBtn.style.opacity = '1';
+                    uploadBtn.style.cursor = 'pointer';
+                }
+            } else {
+                uploadArea.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Error checking attendee status:', error);
+            uploadArea.classList.add('hidden');
+        }
+    } else {
+        uploadArea.classList.add('hidden');
+    }
+
+    // Load existing photos
+    await loadEventPhotos(restaurant.id);
+}
+
+// Compress image for maximum space efficiency
+async function compressImage(file, maxWidth = 800, quality = 0.6) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Calculate new dimensions
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+
+                // Create canvas and compress
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert to blob with compression
+                canvas.toBlob(
+                    (blob) => {
+                        resolve(blob);
+                    },
+                    'image/jpeg',
+                    quality
+                );
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Upload photos
+async function uploadPhotos(restaurantId) {
+    const photoInput = document.getElementById('photoInput');
+    const files = Array.from(photoInput.files);
+
+    if (files.length === 0) return;
+
+    // Check current photo count
+    const photosSnapshot = await getDocs(
+        query(
+            collection(db, 'eventPhotos', restaurantId, 'photos'),
+            orderBy('timestamp', 'desc')
+        )
+    );
+
+    const userPhotos = photosSnapshot.docs.filter(doc => doc.data().userId === currentUser.uid);
+    const currentCount = userPhotos.length;
+    const available = 3 - currentCount;
+
+    if (available <= 0) {
+        showToast('You have already uploaded 3 photos');
+        return;
+    }
+
+    // Limit to available slots
+    const filesToUpload = files.slice(0, available);
+
+    showLoading();
+
+    try {
+        for (const file of filesToUpload) {
+            // Compress image
+            const compressedBlob = await compressImage(file);
+
+            // Generate unique filename
+            const timestamp = Date.now();
+            const randomId = Math.random().toString(36).substring(7);
+            const filename = `${currentUser.uid}_${timestamp}_${randomId}.jpg`;
+
+            // Upload to Firebase Storage
+            const storageRef = ref(storage, `event-photos/${restaurantId}/${filename}`);
+            await uploadBytes(storageRef, compressedBlob);
+
+            // Get download URL
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // Save metadata to Firestore
+            await addDoc(collection(db, 'eventPhotos', restaurantId, 'photos'), {
+                userId: currentUser.uid,
+                userName: currentUser.displayName || 'Anonymous',
+                photoURL: downloadURL,
+                storagePath: `event-photos/${restaurantId}/${filename}`,
+                fileSize: compressedBlob.size,
+                timestamp: serverTimestamp()
+            });
+
+            // Update storage tracking
+            await updateStorageTracking(compressedBlob.size);
+        }
+
+        hideLoading();
+        showToast(`${filesToUpload.length} photo(s) uploaded!`);
+
+        // Reload photos and update UI
+        await setupEventPhotos(currentRestaurant);
+
+        // Clear input
+        photoInput.value = '';
+
+    } catch (error) {
+        hideLoading();
+        console.error('Error uploading photos:', error);
+        showToast('Error uploading photos');
+    }
+}
+
+// Load event photos
+async function loadEventPhotos(restaurantId) {
+    const gallery = document.getElementById('photoGallery');
+
+    try {
+        const photosSnapshot = await getDocs(
+            query(
+                collection(db, 'eventPhotos', restaurantId, 'photos'),
+                orderBy('timestamp', 'desc')
+            )
+        );
+
+        if (photosSnapshot.empty) {
+            gallery.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No photos yet. Be the first to share!</p>';
+            return;
+        }
+
+        let html = '';
+
+        photosSnapshot.docs.forEach(doc => {
+            const photo = doc.data();
+            const isOwner = currentUser && photo.userId === currentUser.uid;
+
+            html += `
+                <div class="photo-item" data-photo-id="${doc.id}">
+                    <img src="${photo.photoURL}" alt="Event photo by ${photo.userName}" loading="lazy">
+                    ${isOwner ? `<button class="delete-photo-btn" onclick="deletePhoto('${restaurantId}', '${doc.id}', '${photo.storagePath}', ${photo.fileSize})" title="Delete photo">×</button>` : ''}
+                    <div class="photo-caption">${photo.userName}</div>
+                </div>
+            `;
+        });
+
+        gallery.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading photos:', error);
+        gallery.innerHTML = '<p style="color: #ff6b35; text-align: center; padding: 20px;">Error loading photos</p>';
+    }
+}
+
+// Delete photo
+window.deletePhoto = async function(restaurantId, photoId, storagePath, fileSize) {
+    const confirmed = await showConfirmModal(
+        'Delete Photo',
+        'Are you sure you want to delete this photo?'
+    );
+
+    if (!confirmed) return;
+
+    showLoading();
+
+    try {
+        // Delete from Storage
+        const storageRef = ref(storage, storagePath);
+        await deleteObject(storageRef);
+
+        // Delete from Firestore
+        await deleteDoc(doc(db, 'eventPhotos', restaurantId, 'photos', photoId));
+
+        // Update storage tracking
+        await updateStorageTracking(-fileSize);
+
+        hideLoading();
+        showToast('Photo deleted');
+
+        // Reload photos
+        await setupEventPhotos(currentRestaurant);
+
+    } catch (error) {
+        hideLoading();
+        console.error('Error deleting photo:', error);
+        showToast('Error deleting photo');
+    }
+}
+
+// Update storage tracking
+async function updateStorageTracking(sizeChange) {
+    try {
+        const trackingRef = doc(db, 'storageTracking', 'metadata');
+        const trackingDoc = await getDoc(trackingRef);
+
+        if (trackingDoc.exists()) {
+            const currentSize = trackingDoc.data().totalSize || 0;
+            const currentCount = trackingDoc.data().photoCount || 0;
+
+            await updateDoc(trackingRef, {
+                totalSize: currentSize + sizeChange,
+                photoCount: sizeChange > 0 ? currentCount + 1 : currentCount - 1,
+                lastUpdated: serverTimestamp()
+            });
+        } else {
+            await setDoc(trackingRef, {
+                totalSize: Math.max(0, sizeChange),
+                photoCount: sizeChange > 0 ? 1 : 0,
+                lastUpdated: serverTimestamp()
+            });
+        }
+
+        // Update admin panel if on admin page
+        if (currentUser && currentUser.email === ADMIN_EMAIL) {
+            await loadStorageStats();
+        }
+    } catch (error) {
+        console.error('Error updating storage tracking:', error);
+    }
+}
+
+// Load storage stats for admin panel
+async function loadStorageStats() {
+    try {
+        const trackingRef = doc(db, 'storageTracking', 'metadata');
+        const trackingDoc = await getDoc(trackingRef);
+
+        const storageBar = document.getElementById('storageBar');
+        const storageUsed = document.getElementById('storageUsed');
+        const totalPhotos = document.getElementById('totalPhotos');
+        const storageWarning = document.getElementById('storageWarning');
+
+        if (!storageBar) return; // Not on admin page
+
+        if (trackingDoc.exists()) {
+            const data = trackingDoc.data();
+            const totalSizeMB = (data.totalSize / (1024 * 1024)).toFixed(2);
+            const photoCount = data.photoCount || 0;
+
+            // Firebase free tier: 1GB storage
+            const maxStorageMB = 1024;
+            const percentage = (totalSizeMB / maxStorageMB) * 100;
+
+            storageUsed.textContent = `${totalSizeMB} MB`;
+            totalPhotos.textContent = photoCount;
+            storageBar.style.width = `${Math.min(percentage, 100)}%`;
+
+            // Update bar color based on usage
+            storageBar.classList.remove('warning', 'danger');
+            if (percentage >= 90) {
+                storageBar.classList.add('danger');
+                storageWarning.textContent = '⚠️ Storage critically low! Approaching free tier limit (1GB).';
+                storageWarning.classList.remove('hidden');
+            } else if (percentage >= 75) {
+                storageBar.classList.add('warning');
+                storageWarning.textContent = '⚠️ Storage getting high. Consider managing photos.';
+                storageWarning.classList.remove('hidden');
+            } else {
+                storageWarning.classList.add('hidden');
+            }
+        } else {
+            storageUsed.textContent = '0 MB';
+            totalPhotos.textContent = '0';
+            storageBar.style.width = '0%';
+            storageWarning.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Error loading storage stats:', error);
+    }
 }
 
 // Back button
@@ -1541,6 +1895,17 @@ document.getElementById('submitRating').addEventListener('click', async () => {
     submitBtn.textContent = 'RATING SUBMITTED';
 });
 
+// Photo upload button
+document.getElementById('uploadPhotoBtn').addEventListener('click', () => {
+    document.getElementById('photoInput').click();
+});
+
+// Photo input change - upload photos
+document.getElementById('photoInput').addEventListener('change', async () => {
+    if (!currentRestaurant) return;
+    await uploadPhotos(currentRestaurant.id);
+});
+
 // Load member names for hosted by dropdown
 async function loadMemberNames(selectElementId) {
     const selectElement = document.getElementById(selectElementId);
@@ -2025,6 +2390,9 @@ async function loadAdminPage() {
 
         // Load delete rating dropdowns
         await loadDeleteRatingDropdowns();
+
+        // Load storage stats
+        await loadStorageStats();
 
         hideLoading();
     } catch (error) {
