@@ -324,13 +324,17 @@ body {
     padding: 16px 24px;
     margin-bottom: var(--space-md);
     text-align: center;
+    transition: background 0.3s ease;
+}
+
+.next-event-countdown.live {
+    background: linear-gradient(135deg, #28a745, #20c997);
 }
 
 .countdown-display {
     font-size: 18px;
     font-weight: var(--weight-bold);
     color: white;
-    text-transform: lowercase;
     letter-spacing: 0.3px;
 }
 
@@ -344,6 +348,61 @@ body {
     background: #faf8f3;
     border-radius: 12px;
     border: 1px solid #f0f0f0;
+}
+
+/* RSVP Section */
+.rsvp-section {
+    margin-bottom: var(--space-md);
+}
+
+.rsvp-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: linear-gradient(180deg, #28a745, #218838);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.rsvp-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.35);
+}
+
+.rsvp-btn.rsvped {
+    background: linear-gradient(180deg, #dc3545, #c82333);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.25);
+}
+
+.rsvp-btn.rsvped:hover {
+    box-shadow: 0 6px 16px rgba(220, 53, 69, 0.35);
+}
+
+.attendee-list {
+    background: #f7f7f7;
+    border-radius: 12px;
+    padding: 12px 16px;
+    text-align: center;
+}
+
+.attendee-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
+}
+
+.attendee-names {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
 }
 
 /* Dashboard Header */
@@ -418,6 +477,149 @@ body {
 
 .burger-menu-btn:active {
     transform: scale(0.98);
+}
+
+/* Notification Bell */
+.notification-bell-btn {
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    color: white;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    right: 0;
+    top: 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-weight: 300;
+    filter: grayscale(100%) brightness(200%);
+}
+
+.notification-bell-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.notification-bell-btn:active {
+    transform: scale(0.98);
+}
+
+.notification-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Notification Dropdown */
+.notification-dropdown {
+    position: absolute;
+    top: 140px;
+    right: 20px;
+    width: 360px;
+    max-width: calc(100vw - 40px);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.notification-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.mark-all-read-btn {
+    background: transparent;
+    border: none;
+    color: #ff6b35;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.mark-all-read-btn:hover {
+    text-decoration: underline;
+}
+
+.notification-list {
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.notification-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.notification-item:hover {
+    background: #faf8f3;
+}
+
+.notification-item.unread {
+    background: #fff8f0;
+    border-left: 4px solid #ff6b35;
+}
+
+.notification-item-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+}
+
+.notification-item-message {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.notification-item-time {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    margin-top: 6px;
+}
+
+.notification-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--color-text-tertiary);
+    font-size: 14px;
 }
 
 .logout-btn {
@@ -872,7 +1074,8 @@ body {
 
 .detail-header-row {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     margin-bottom: 20px;
 }
 
@@ -936,6 +1139,30 @@ body {
     opacity: 1;
 }
 
+.close-event-btn {
+    background: #6c757d;
+    border: none;
+    color: white;
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 8px;
+    line-height: 1;
+}
+
+.close-event-btn:hover {
+    background: #5a6268;
+    transform: scale(1.1);
+}
+
+.close-event-btn.closed {
+    background: #28a745;
+    cursor: not-allowed;
+}
+
 .delete-restaurant-btn {
     background: transparent;
     border: none;
@@ -959,6 +1186,154 @@ body {
     border-radius: 16px;
     padding: 20px;
     margin-bottom: 24px;
+}
+
+/* Rating Report Section */
+.rating-report-section {
+    margin-bottom: 24px;
+}
+
+.rating-report-card {
+    background: linear-gradient(135deg, #fff8f0, #fef5e7);
+    border-radius: 16px;
+    padding: 24px;
+    border: 2px solid #ff6b35;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
+}
+
+.report-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ff6b35;
+    text-align: center;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.report-verdict {
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: white;
+    border-radius: 12px;
+}
+
+.report-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.report-stat {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.report-stat .stat-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.report-stat .stat-value {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: #ff6b35;
+}
+
+.superlatives-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.report-superlatives {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+}
+
+.superlative-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.superlative-item:last-child {
+    border-bottom: none;
+}
+
+.superlative-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.superlative-winner {
+    font-size: 14px;
+    color: #ff6b35;
+    font-weight: 700;
+}
+
+/* Mark Attendance Section */
+.mark-attendance-section {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.mark-attendance-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(180deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.mark-attendance-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.35);
+}
+
+.mark-attendance-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.attendance-status {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    padding: 8px;
+}
+
+.attendance-status.attended {
+    color: #28a745;
+    font-weight: 600;
 }
 
 .overall-average-display {
@@ -1251,8 +1626,80 @@ body {
     transition: transform 0.2s ease;
 }
 
+.submit-rating-btn.show-for-next-event {
+    display: block;
+}
+
 .submit-rating-btn:hover {
     transform: translateY(-2px);
+}
+
+.submit-rating-btn:disabled,
+.submit-rating-btn.submitted {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.submit-rating-btn:disabled:hover,
+.submit-rating-btn.submitted:hover {
+    transform: none;
+}
+
+/* Confirmation Modal */
+.confirm-modal-content {
+    max-width: 400px;
+    text-align: center;
+}
+
+.confirm-modal-content h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 16px;
+}
+
+.confirm-modal-content p {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.modal-btn-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.modal-btn-cancel:hover {
+    background: #5a6268;
+}
+
+.modal-btn-confirm {
+    background: linear-gradient(180deg, #ff8c52, #ff6b35);
+    color: white;
+}
+
+.modal-btn-confirm:hover {
+    background: linear-gradient(180deg, #ff9d65, #ff7a48);
+    transform: translateY(-1px);
 }
 
 /* Modal */

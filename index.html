@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beachlands Curry Club</title>
-    <link rel="stylesheet" href="style.css?v=92">
+    <link rel="stylesheet" href="style.css?v=100">
 </head>
 <body>
     <!-- Login Page -->
@@ -39,6 +39,10 @@
                 <span class="menu-icon">👥</span>
                 Members
             </a>
+            <a href="#" id="menuFeatureRequestLink" class="menu-item">
+                <span class="menu-icon">💡</span>
+                Feature Request
+            </a>
             <a href="#" id="menuProfileLink" class="menu-item">
                 <span class="menu-icon">👤</span>
                 Profile
@@ -67,15 +71,25 @@
                 <div class="tonights-pick-content">
                     <h2 class="tonights-pick-name" id="nextEventName">-</h2>
                     <div class="next-event-hosted-by" id="nextEventHostedBy"></div>
+                    <div class="tonights-pick-rating-wrapper">
+                        <span class="tonights-pick-label">CLUB AVERAGE</span>
+                        <div class="tonights-pick-rating" id="nextEventRating">-</div>
+                    </div>
                     <div class="next-event-date" id="nextEventDate"></div>
                     <div class="next-event-countdown" id="nextEventCountdown">
                         <div class="countdown-display">-</div>
                     </div>
                     <div class="next-event-address" id="nextEventAddress"></div>
-                    <div class="tonights-pick-rating-wrapper">
-                        <span class="tonights-pick-label">CLUB AVERAGE</span>
-                        <div class="tonights-pick-rating" id="nextEventRating">-</div>
+
+                    <!-- RSVP Section -->
+                    <div class="rsvp-section" id="rsvpSection">
+                        <button class="rsvp-btn" id="rsvpBtn">RSVP</button>
+                        <div class="attendee-list" id="attendeeList">
+                            <div class="attendee-count" id="attendeeCount">0 attending</div>
+                            <div class="attendee-names" id="attendeeNames"></div>
+                        </div>
                     </div>
+
                     <button class="rate-btn" id="rateNextEvent">VIEW DETAILS</button>
                 </div>
             </div>
@@ -86,6 +100,10 @@
             <div class="header-top">
                 <button class="burger-menu-btn" id="burgerMenuBtn">☰</button>
                 <img src="textlogo.png" alt="Beachlands Curry Club" class="dashboard-logo">
+                <button class="notification-bell-btn" id="notificationBellBtn">
+                    🔔
+                    <span class="notification-badge hidden" id="notificationBadge"></span>
+                </button>
             </div>
             <div class="club-stats">
                 <div class="stat">
@@ -100,6 +118,17 @@
                     <span class="stat-label">AVG RATING</span>
                     <span class="stat-value" id="overallAverage">0.0</span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Notification Dropdown -->
+        <div class="notification-dropdown hidden" id="notificationDropdown">
+            <div class="notification-header">
+                <h3>Notifications</h3>
+                <button class="mark-all-read-btn" id="markAllReadBtn">Mark all read</button>
+            </div>
+            <div class="notification-list" id="notificationList">
+                <!-- Notifications will be added here -->
             </div>
         </div>
 
@@ -241,6 +270,35 @@
         </div>
     </div>
 
+    <!-- Feature Request Page -->
+    <div id="featureRequestPage" class="page">
+        <div class="profile-container">
+            <button class="back-icon-btn" id="featureRequestBackBtn" title="Back to Dashboard">←</button>
+            <h1 class="profile-title">Feature Request</h1>
+
+            <div class="profile-info-card">
+                <h2 class="section-title">SUBMIT A FEATURE REQUEST</h2>
+                <form id="featureRequestForm">
+                    <div class="input-group">
+                        <label for="featureRequestMember">Submitted By</label>
+                        <select id="featureRequestMember" required style="padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px; background: white;">
+                            <option value="">Select a member...</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="featureRequestTitle">Feature Title</label>
+                        <input type="text" id="featureRequestTitle" required placeholder="Brief title for your request">
+                    </div>
+                    <div class="input-group">
+                        <label for="featureRequestDescription">Description</label>
+                        <textarea id="featureRequestDescription" required placeholder="Describe the feature you'd like to see..." style="width: 100%; padding: 10px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 14px; min-height: 200px; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">SUBMIT REQUEST</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Admin Page -->
     <div id="adminPage" class="page">
         <div class="admin-container">
@@ -291,6 +349,31 @@
                 </p>
             </div>
 
+            <!-- Send Notification -->
+            <div class="admin-content" style="margin-bottom: 24px;">
+                <h2 class="table-subtitle">SEND NOTIFICATION</h2>
+                <form id="sendNotificationForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 14px; font-weight: 600; color: #666;">Message</label>
+                        <textarea
+                            id="notificationMessage"
+                            required
+                            placeholder="Enter notification message to broadcast to all users..."
+                            style="padding: 12px 16px; border: 2px solid #e5e5e5; border-radius: 12px; font-size: 14px; background: #f7f7f7; min-height: 100px; resize: vertical; font-family: inherit;"
+                        ></textarea>
+                    </div>
+                    <button
+                        type="submit"
+                        style="padding: 14px 24px; background: linear-gradient(180deg, #ff8c52, #ff6b35); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25); text-transform: uppercase;"
+                    >
+                        BROADCAST NOTIFICATION
+                    </button>
+                </form>
+                <p style="font-size: 12px; color: #999; margin-top: 12px; font-style: italic;">
+                    This will send a notification to all users. They will see it in the notification bell.
+                </p>
+            </div>
+
             <!-- User Analytics -->
             <div class="admin-content">
                 <h2 class="table-subtitle">USER ACTIVITY</h2>
@@ -305,6 +388,54 @@
                             </tr>
                         </thead>
                         <tbody id="adminTableBody">
+                            <!-- Rows will be added by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Delete Ratings Tool -->
+            <div class="admin-content" style="margin-top: 24px;">
+                <h2 class="table-subtitle">DELETE RATINGS</h2>
+                <form id="deleteRatingForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 14px; font-weight: 600; color: #666;">Restaurant</label>
+                        <select id="deleteRatingRestaurant" required style="padding: 12px 16px; border: 2px solid #e5e5e5; border-radius: 12px; font-size: 14px; background: #f7f7f7;">
+                            <option value="">Select a restaurant...</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 14px; font-weight: 600; color: #666;">User</label>
+                        <select id="deleteRatingUser" required style="padding: 12px 16px; border: 2px solid #e5e5e5; border-radius: 12px; font-size: 14px; background: #f7f7f7;">
+                            <option value="">Select a user...</option>
+                        </select>
+                    </div>
+                    <button
+                        type="submit"
+                        style="padding: 14px 24px; background: linear-gradient(180deg, #dc3545, #c82333); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.25); text-transform: uppercase;"
+                    >
+                        DELETE RATING
+                    </button>
+                </form>
+                <p style="font-size: 12px; color: #999; margin-top: 12px; font-style: italic;">
+                    This will permanently delete the selected user's rating for the selected restaurant.
+                </p>
+            </div>
+
+            <!-- Feature Requests -->
+            <div class="admin-content" style="margin-top: 24px;">
+                <h2 class="table-subtitle">FEATURE REQUESTS</h2>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table" id="featureRequestsTable">
+                        <thead>
+                            <tr>
+                                <th>TITLE</th>
+                                <th>SUBMITTED BY</th>
+                                <th>DATE</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="featureRequestsTableBody">
                             <!-- Rows will be added by JavaScript -->
                         </tbody>
                     </table>
@@ -327,6 +458,9 @@
                     <button class="lock-restaurant-btn hidden" id="lockRestaurantBtn" title="Lock/Unlock Rating">
                         🔓
                     </button>
+                    <button class="close-event-btn hidden" id="closeEventBtn" title="Close Event">
+                        ✓
+                    </button>
                     <button class="delete-restaurant-btn hidden" id="deleteRestaurantBtn" title="Delete Restaurant">
                         🗑️
                     </button>
@@ -336,6 +470,57 @@
             <div class="detail-header-row">
                 <h1 class="detail-restaurant-name" id="detailRestaurantName"></h1>
                 <div class="detail-hosted-by" id="detailHostedBy"></div>
+            </div>
+
+            <!-- Mark Attendance Button (shows for events that have started) -->
+            <div id="markAttendanceSection" class="mark-attendance-section hidden">
+                <button id="markAttendanceBtn" class="mark-attendance-btn">MARK AS ATTENDED</button>
+                <div class="attendance-status" id="attendanceStatus"></div>
+            </div>
+
+            <!-- Rating Report Section -->
+            <div id="ratingReportSection" class="rating-report-section hidden">
+                <div class="rating-report-card">
+                    <h2 class="report-title">📊 RATING REPORT</h2>
+                    <div class="report-verdict" id="reportVerdict"></div>
+                    <div class="report-stats">
+                        <div class="report-stat">
+                            <span class="stat-label">Overall Average</span>
+                            <span class="stat-value" id="reportOverallAvg"></span>
+                        </div>
+                        <div class="report-stat">
+                            <span class="stat-label">Total Raters</span>
+                            <span class="stat-value" id="reportTotalRaters"></span>
+                        </div>
+                    </div>
+                    <div class="report-superlatives">
+                        <h3 class="superlatives-title">🏆 SUPERLATIVES</h3>
+                        <div class="superlative-item">
+                            <span class="superlative-label">Toughest Critic</span>
+                            <span class="superlative-winner" id="toughestCritic"></span>
+                        </div>
+                        <div class="superlative-item">
+                            <span class="superlative-label">Most Generous</span>
+                            <span class="superlative-winner" id="mostGenerous"></span>
+                        </div>
+                        <div class="superlative-item">
+                            <span class="superlative-label">Meal Master 🍛</span>
+                            <span class="superlative-winner" id="mealMaster"></span>
+                        </div>
+                        <div class="superlative-item">
+                            <span class="superlative-label">Bathroom Connoisseur 🚽</span>
+                            <span class="superlative-winner" id="bathroomConnoisseur"></span>
+                        </div>
+                        <div class="superlative-item">
+                            <span class="superlative-label">Ambiance Aficionado 🕯️</span>
+                            <span class="superlative-winner" id="ambianceAficionado"></span>
+                        </div>
+                        <div class="superlative-item">
+                            <span class="superlative-label">Service Savant 🙏</span>
+                            <span class="superlative-winner" id="serviceSavant"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Event Details Section (shows for locked restaurants) -->
@@ -481,11 +666,23 @@
         <span id="toastMessage"></span>
     </div>
 
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content confirm-modal-content">
+            <h2 id="confirmModalTitle">Confirm Action</h2>
+            <p id="confirmModalMessage">Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" id="confirmModalCancel">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmModalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="spinner">
         <div class="spinner-circle"></div>
     </div>
 
-    <script type="module" src="app.js?v=93"></script>
+    <script type="module" src="app.js?v=114"></script>
 </body>
 </html>

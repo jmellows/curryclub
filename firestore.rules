@@ -55,5 +55,31 @@ service cloud.firestore {
       // Admin can delete old notifications
       allow delete: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
     }
+
+    // Feature Requests collection
+    match /featureRequests/{requestId} {
+      // Any authenticated user can create feature requests
+      allow create: if request.auth != null;
+      // Admin can read and delete
+      allow read, delete: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
+    }
+
+    // Event Attendees collection - for RSVP and attendance tracking
+    match /eventAttendees/{restaurantId}/attendees/{userId} {
+      // Users can create/update/delete their own attendance
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      // Any authenticated user can read all attendees
+      allow read: if request.auth != null;
+    }
+
+    // Rating Reports collection - generated when all attendees have rated
+    match /ratingReports/{restaurantId} {
+      // Any authenticated user can read reports
+      allow read: if request.auth != null;
+      // Any authenticated user can create reports (automated)
+      allow create: if request.auth != null;
+      // Admin can delete reports
+      allow delete: if request.auth != null && request.auth.token.email == 'jmellowsjnr@gmail.com';
+    }
   }
 }

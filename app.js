@@ -304,6 +304,11 @@ onAuthStateChanged(auth, (user) => {
         // Listen for notifications
         setupNotificationListener();
 
+        // Setup notification dropdown
+        setupNotificationDropdown();
+        renderNotifications();
+        updateNotificationBadge();
+
         // Show/hide admin menu link
         const adminLink = document.getElementById('menuAdminLink');
         if (user.email === ADMIN_EMAIL) {
@@ -682,9 +687,12 @@ async function loadNextEvent() {
                     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
+                    const countdownElement = document.getElementById('nextEventCountdown');
                     let countdownText = '';
+
                     if (diff > 0) {
                         // Future event
+                        countdownElement.classList.remove('live');
                         if (days > 0) {
                             countdownText = `${days} day${days !== 1 ? 's' : ''}, ${hours} hour${hours !== 1 ? 's' : ''} until event`;
                         } else if (hours > 0) {
@@ -693,20 +701,9 @@ async function loadNextEvent() {
                             countdownText = `${minutes} minute${minutes !== 1 ? 's' : ''}, ${seconds} second${seconds !== 1 ? 's' : ''} until event`;
                         }
                     } else {
-                        // Past event - show how long ago
-                        const absDays = Math.abs(days);
-                        const absHours = Math.abs(hours);
-                        const absMinutes = Math.abs(minutes);
-
-                        if (absDays > 0) {
-                            countdownText = `event was ${absDays} day${absDays !== 1 ? 's' : ''} ago`;
-                        } else if (absHours > 0) {
-                            countdownText = `event was ${absHours} hour${absHours !== 1 ? 's' : ''} ago`;
-                        } else if (absMinutes > 0) {
-                            countdownText = `event was ${absMinutes} minute${absMinutes !== 1 ? 's' : ''} ago`;
-                        } else {
-                            countdownText = `event happening now!`;
-                        }
+                        // Event has started
+                        countdownElement.classList.add('live');
+                        countdownText = `LIVE EVENT`;
                     }
 
                     document.querySelector('#nextEventCountdown .countdown-display').textContent = countdownText;
@@ -718,6 +715,9 @@ async function loadNextEvent() {
                 // Make entire Next Event card clickable
                 document.getElementById('nextEventCard').onclick = () => showRestaurantDetail(restaurant);
                 document.getElementById('rateNextEvent').onclick = () => showRestaurantDetail(restaurant);
+
+                // Setup RSVP functionality
+                await setupRSVPForNextEvent();
             } else {
                 console.log('📅 No eventDate or ratingCount > 0 - hiding');
                 document.getElementById('nextEventSection').classList.add('hidden');
@@ -781,13 +781,14 @@ async function showRestaurantDetail(restaurant) {
     previousRatingValues = { meal: 0, bathroom: 0, ambiance: 0, service: 0 };
 
     // Reset overall average display
-    document.getElementById('overallAverageValue').textContent = '-';
+    document.getElementById('overallAverageValue').textContent = '0.0/10';
 
 
     // Show/hide admin buttons for admin only
     const deleteBtn = document.getElementById('deleteRestaurantBtn');
     const lockBtn = document.getElementById('lockRestaurantBtn');
     const starBtn = document.getElementById('setNextEvent');
+    const closeEventBtn = document.getElementById('closeEventBtn');
 
     if (currentUser && currentUser.email === ADMIN_EMAIL) {
         deleteBtn.classList.remove('hidden');
@@ -799,13 +800,29 @@ async function showRestaurantDetail(restaurant) {
         starBtn.classList.add('hidden');
     }
 
+    // Show/hide Close Event button for events (any user can close)
+    const isEventClosed = restaurant.eventClosed || false;
+    if (restaurant.isLocked && restaurant.eventDate) {
+        closeEventBtn.classList.remove('hidden');
+        if (isEventClosed) {
+            closeEventBtn.classList.add('closed');
+            closeEventBtn.title = 'Event Closed';
+        } else {
+            closeEventBtn.classList.remove('closed');
+            closeEventBtn.title = 'Close Event';
+        }
+    } else {
+        closeEventBtn.classList.add('hidden');
+    }
+
     // Check if restaurant is locked and disable sliders
     const isLocked = restaurant.isLocked || false;
     const sliders = ['mealSlider', 'bathroomSlider', 'ambianceSlider', 'serviceSlider'];
 
     sliders.forEach(sliderId => {
         const slider = document.getElementById(sliderId);
-        if (isLocked && currentUser.email !== ADMIN_EMAIL) {
+        // Disable sliders if event is closed OR if locked and not admin
+        if (isEventClosed || (isLocked && currentUser.email !== ADMIN_EMAIL)) {
             slider.disabled = true;
         } else {
             slider.disabled = false;
@@ -827,23 +844,33 @@ async function showRestaurantDetail(restaurant) {
     const overallAverageDisplay = document.getElementById('overallAverageDisplay');
 
     if (isLocked && restaurant.eventDate) {
-        // Populate event detail fields
         const eventDate = restaurant.eventDate.toDate ? restaurant.eventDate.toDate() : new Date(restaurant.eventDate);
-        document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
-        document.getElementById('editEventTime').value = restaurant.eventTime || '';
-        document.getElementById('editEventAddress').value = restaurant.eventAddress || '';
+        const now = new Date();
 
-        // Load member names and set the current hosted by value
-        await loadMemberNames('editHostedBy');
-        document.getElementById('editHostedBy').value = restaurant.hostedBy || '';
+        // Only show event details if event hasn't started yet
+        if (now < eventDate) {
+            // Event upcoming - show event details
+            document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
+            document.getElementById('editEventTime').value = restaurant.eventTime || '';
+            document.getElementById('editEventAddress').value = restaurant.eventAddress || '';
 
-        eventDetailsSection.classList.remove('hidden');
+            // Load member names and set the current hosted by value
+            await loadMemberNames('editHostedBy');
+            document.getElementById('editHostedBy').value = restaurant.hostedBy || '';
 
-        // Add locked styling if user is not admin
-        if (currentUser.email !== ADMIN_EMAIL) {
-            detailContainer.classList.add('locked');
-            overallAverageDisplay.classList.add('locked');
+            eventDetailsSection.classList.remove('hidden');
+
+            // Add locked styling if user is not admin
+            if (currentUser.email !== ADMIN_EMAIL) {
+                detailContainer.classList.add('locked');
+                overallAverageDisplay.classList.add('locked');
+            } else {
+                detailContainer.classList.remove('locked');
+                overallAverageDisplay.classList.remove('locked');
+            }
         } else {
+            // Event has started - hide event details
+            eventDetailsSection.classList.add('hidden');
             detailContainer.classList.remove('locked');
             overallAverageDisplay.classList.remove('locked');
         }
@@ -856,19 +883,43 @@ async function showRestaurantDetail(restaurant) {
     // FLIP TO DETAIL PAGE IMMEDIATELY
     showPage('detail');
 
+    // Setup mark attendance (check if event has started and user RSVP'd)
+    await setupMarkAttendance(restaurant);
+
+    // Load and display rating report if one exists
+    await loadRatingReport(restaurant.id);
+
     // Load data in background while flip animation plays
     // Check if this is next event
     getDoc(doc(db, 'tonightsPick', 'current')).then(pickDoc => {
         const isNextEvent = pickDoc.exists() && pickDoc.data().restaurantId === restaurant.id;
 
         const toggleBtn = document.getElementById('setNextEvent');
+        const submitBtn = document.getElementById('submitRating');
 
         if (isNextEvent) {
             toggleBtn.classList.add('active');
             toggleBtn.textContent = '⭐';
+
+            // Show submit button only if event has started AND event is not closed
+            if (restaurant.eventDate && !restaurant.eventClosed) {
+                const eventDate = restaurant.eventDate.toDate ? restaurant.eventDate.toDate() : new Date(restaurant.eventDate);
+                const now = new Date();
+
+                // Only show submit button if event has started
+                if (now >= eventDate) {
+                    submitBtn.classList.add('show-for-next-event');
+                } else {
+                    submitBtn.classList.remove('show-for-next-event');
+                }
+            } else {
+                submitBtn.classList.remove('show-for-next-event');
+            }
         } else {
             toggleBtn.classList.remove('active');
             toggleBtn.textContent = '☆';
+            // Hide submit button for other restaurants
+            submitBtn.classList.remove('show-for-next-event');
         }
     }).catch(error => {
         console.error('Error checking next event:', error);
@@ -903,6 +954,23 @@ async function showRestaurantDetail(restaurant) {
             const overallAvg = ((userRating.meal + userRating.bathroom + userRating.ambiance + userRating.service) / 4).toFixed(1);
             document.getElementById('overallAverageValue').textContent = `${overallAvg}/10`;
 
+            // Check if this is Next Event and disable submit button if user already rated
+            getDoc(doc(db, 'tonightsPick', 'current')).then(pickDoc => {
+                const isNextEvent = pickDoc.exists() && pickDoc.data().restaurantId === restaurant.id;
+                if (isNextEvent && restaurant.eventDate) {
+                    const eventDate = restaurant.eventDate.toDate ? restaurant.eventDate.toDate() : new Date(restaurant.eventDate);
+                    const now = new Date();
+
+                    // Only disable button if event has started (otherwise button is hidden anyway)
+                    if (now >= eventDate) {
+                        const submitBtn = document.getElementById('submitRating');
+                        submitBtn.disabled = true;
+                        submitBtn.classList.add('submitted');
+                        submitBtn.textContent = 'RATING SUBMITTED';
+                    }
+                }
+            });
+
             // Set previous rating values to current loaded values
             previousRatingValues = {
                 meal: userRating.meal || 0,
@@ -936,7 +1004,7 @@ async function showRestaurantDetail(restaurant) {
 
                 document.getElementById('overallAverageValue').textContent = 'locked';
             } else {
-                document.getElementById('overallAverageValue').textContent = 'Not rated yet - move all 4 sliders to rate';
+                document.getElementById('overallAverageValue').textContent = '0.0/10';
             }
         }
     }).catch(error => {
@@ -1183,24 +1251,34 @@ document.getElementById('lockRestaurantBtn').addEventListener('click', async () 
             lockBtn.classList.add('locked');
             showToast(`${currentRestaurant.name} is now locked - users cannot rate`);
 
-            // Show event details if restaurant has event data
+            // Show event details if restaurant has event data AND event hasn't started
             if (currentRestaurant.eventDate) {
-                eventDetailsSection.classList.remove('hidden');
                 const eventDate = currentRestaurant.eventDate.toDate ? currentRestaurant.eventDate.toDate() : new Date(currentRestaurant.eventDate);
-                document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
-                document.getElementById('editEventTime').value = currentRestaurant.eventTime || '';
-                document.getElementById('editEventAddress').value = currentRestaurant.eventAddress || '';
+                const now = new Date();
 
-                // Load member names and set the current hosted by value
-                await loadMemberNames('editHostedBy');
-                document.getElementById('editHostedBy').value = currentRestaurant.hostedBy || '';
+                if (now < eventDate) {
+                    // Event upcoming - show event details
+                    eventDetailsSection.classList.remove('hidden');
+                    document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
+                    document.getElementById('editEventTime').value = currentRestaurant.eventTime || '';
+                    document.getElementById('editEventAddress').value = currentRestaurant.eventAddress || '';
 
-                // Add locked styling if user is not admin
-                if (currentUser.email !== ADMIN_EMAIL) {
-                    detailContainer.classList.add('locked');
-                    overallAverageDisplay.classList.add('locked');
-                    document.getElementById('overallAverageValue').textContent = 'locked';
+                    // Load member names and set the current hosted by value
+                    await loadMemberNames('editHostedBy');
+                    document.getElementById('editHostedBy').value = currentRestaurant.hostedBy || '';
+
+                    // Add locked styling if user is not admin
+                    if (currentUser.email !== ADMIN_EMAIL) {
+                        detailContainer.classList.add('locked');
+                        overallAverageDisplay.classList.add('locked');
+                        document.getElementById('overallAverageValue').textContent = 'locked';
+                    } else {
+                        detailContainer.classList.remove('locked');
+                        overallAverageDisplay.classList.remove('locked');
+                    }
                 } else {
+                    // Event has started - hide event details
+                    eventDetailsSection.classList.add('hidden');
                     detailContainer.classList.remove('locked');
                     overallAverageDisplay.classList.remove('locked');
                 }
@@ -1220,7 +1298,7 @@ document.getElementById('lockRestaurantBtn').addEventListener('click', async () 
                 const overallAvg = ((currentUserRating.meal + currentUserRating.bathroom + currentUserRating.ambiance + currentUserRating.service) / 4).toFixed(1);
                 document.getElementById('overallAverageValue').textContent = `${overallAvg}/10`;
             } else {
-                document.getElementById('overallAverageValue').textContent = 'Not rated yet - move all 4 sliders to rate';
+                document.getElementById('overallAverageValue').textContent = '0.0/10';
             }
         }
 
@@ -1281,6 +1359,60 @@ document.getElementById('saveEventDetails').addEventListener('click', async () =
         hideLoading();
         console.error('Error saving event details:', error);
         showToast('Error updating event details');
+    }
+});
+
+// Close Event (any user can close)
+document.getElementById('closeEventBtn').addEventListener('click', async () => {
+    if (!currentRestaurant) return;
+    if (!currentUser) {
+        showToast('You must be logged in to close an event');
+        return;
+    }
+
+    // Check if already closed
+    if (currentRestaurant.eventClosed) {
+        showToast('Event is already closed');
+        return;
+    }
+
+    const confirmed = await showConfirmModal(
+        'Close Event',
+        `Close the event for "${currentRestaurant.name}"? This will lock all ratings and hide the submit button.`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        await updateDoc(doc(db, 'restaurants', currentRestaurant.id), {
+            eventClosed: true
+        });
+
+        showToast('Event closed!');
+
+        // Update current restaurant object
+        currentRestaurant.eventClosed = true;
+
+        // Update UI
+        const closeEventBtn = document.getElementById('closeEventBtn');
+        closeEventBtn.classList.add('closed');
+        closeEventBtn.title = 'Event Closed';
+
+        // Hide submit button
+        const submitBtn = document.getElementById('submitRating');
+        submitBtn.classList.remove('show-for-next-event');
+
+        // Make sliders read-only
+        const sliders = ['mealSlider', 'bathroomSlider', 'ambianceSlider', 'serviceSlider'];
+        sliders.forEach(sliderId => {
+            document.getElementById(sliderId).disabled = true;
+        });
+
+    } catch (error) {
+        console.error('Error closing event:', error);
+        showToast('Error closing event');
     }
 });
 
@@ -1380,71 +1512,33 @@ async function saveRatingToFirebase() {
         const overallAvg = ((meal + bathroom + ambiance + service) / 4).toFixed(1);
         document.getElementById('overallAverageValue').textContent = `${overallAvg}/10`;
 
-        // Funny notification checks - only trigger on threshold crossing
-        const userName = currentUser.displayName || currentUser.email.split('@')[0];
-        let message = 'Rating saved!';
-        let showFunnyNotification = false;
+        showToast('Rating saved!');
 
-        // Check if we crossed into "all 10s" territory
-        const wasAll10s = previousRatingValues.meal === 10 && previousRatingValues.bathroom === 10 &&
-                          previousRatingValues.ambiance === 10 && previousRatingValues.service === 10;
-        const isAll10s = meal === 10 && bathroom === 10 && ambiance === 10 && service === 10;
-
-        if (isAll10s && !wasAll10s) {
-            message = `${userName} is suspiciously easy to please... 🤔`;
-            showFunnyNotification = true;
-        }
-        // Meal rating crossed below 4 (Debby Downer)
-        else if (meal < 4 && previousRatingValues.meal >= 4) {
-            message = `${userName} is being a Debby Downer on meals! 😢`;
-            showFunnyNotification = true;
-        }
-        // Service rating crossed below 3
-        else if (service < 3 && previousRatingValues.service >= 3) {
-            message = `${userName} didn't get the royal treatment 👎`;
-            showFunnyNotification = true;
-        }
-        // Bathroom rating crossed above 9
-        else if (bathroom > 9 && previousRatingValues.bathroom <= 9) {
-            message = `${userName} found their throne! 👑🚽`;
-            showFunnyNotification = true;
-        }
-        // Ambiance rating crossed above 9
-        else if (ambiance > 9 && previousRatingValues.ambiance <= 9) {
-            message = `${userName} wants to move in! 🏠✨`;
-            showFunnyNotification = true;
-        }
-
-        // Update previous values for next comparison
-        previousRatingValues = { meal, bathroom, ambiance, service };
-
-        // Save notification to Firestore if it's a funny one
-        if (showFunnyNotification) {
-            try {
-                await addDoc(collection(db, 'notifications'), {
-                    message: message,
-                    restaurantName: currentRestaurant.name,
-                    userName: userName,
-                    timestamp: serverTimestamp(),
-                    read: false
-                });
-                console.log('📢 Notification broadcast:', message);
-            } catch (error) {
-                console.error('Error saving notification:', error);
-            }
-        }
-
-        showToast(message);
+        // Check if this triggers a rating report generation
+        await checkAndGenerateRatingReport(currentRestaurant.id);
     } catch (error) {
         console.error('Error saving rating:', error);
         showToast('Error saving rating');
     }
 }
 
-// Submit rating (legacy - now auto-saves)
+// Submit rating
 document.getElementById('submitRating').addEventListener('click', async () => {
     if (!currentRestaurant) return;
+
+    const submitBtn = document.getElementById('submitRating');
+
+    // Check if already submitted
+    if (submitBtn.classList.contains('submitted') || submitBtn.disabled) {
+        return;
+    }
+
     await saveRatingToFirebase();
+
+    // Disable button and change appearance
+    submitBtn.disabled = true;
+    submitBtn.classList.add('submitted');
+    submitBtn.textContent = 'RATING SUBMITTED';
 });
 
 // Load member names for hosted by dropdown
@@ -1596,10 +1690,18 @@ document.getElementById('addRestaurantForm').addEventListener('submit', async (e
         updateChiliPosition();
     });
 
-    // Auto-save when slider changes
+    // Auto-save when slider changes (only for non-Next Event restaurants)
     slider.addEventListener('change', async () => {
         if (!currentRestaurant) return;
-        await saveRatingToFirebase();
+
+        // Check if this is the Next Event
+        const pickDoc = await getDoc(doc(db, 'tonightsPick', 'current'));
+        const isNextEvent = pickDoc.exists() && pickDoc.data().restaurantId === currentRestaurant.id;
+
+        // Only auto-save if NOT the Next Event (Next Event requires submit button)
+        if (!isNextEvent) {
+            await saveRatingToFirebase();
+        }
     });
 
     // Initial position - delay to ensure slider is rendered
@@ -1642,6 +1744,27 @@ document.getElementById('menuMembersLink').addEventListener('click', (e) => {
     // Navigate to members page
     showPage('members');
     loadMembersPage();
+});
+
+// Menu navigation - Feature Request
+document.getElementById('menuFeatureRequestLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    // Close menu
+    document.getElementById('slideOutMenu').classList.remove('active');
+    document.getElementById('menuBackdrop').classList.remove('active');
+
+    // Load member names and auto-select current user
+    await loadMemberNames('featureRequestMember');
+    if (currentUser && currentUser.displayName) {
+        document.getElementById('featureRequestMember').value = currentUser.displayName;
+    }
+
+    showPage('featureRequest');
+});
+
+// Feature Request back button
+document.getElementById('featureRequestBackBtn').addEventListener('click', () => {
+    showPage('dashboard');
 });
 
 // Menu navigation - Profile
@@ -1760,6 +1883,49 @@ document.getElementById('changePasswordForm').addEventListener('submit', async (
     }
 });
 
+// Feature Request form submission
+document.getElementById('featureRequestForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!currentUser) {
+        showToast('You must be logged in to submit a feature request');
+        return;
+    }
+
+    const memberName = document.getElementById('featureRequestMember').value.trim();
+    const title = document.getElementById('featureRequestTitle').value.trim();
+    const description = document.getElementById('featureRequestDescription').value.trim();
+
+    if (!memberName || !title || !description) {
+        showToast('Please fill in all fields');
+        return;
+    }
+
+    showLoading();
+    try {
+        await addDoc(collection(db, 'featureRequests'), {
+            memberName,
+            title,
+            description,
+            submittedBy: currentUser.uid,
+            submittedAt: serverTimestamp()
+        });
+
+        hideLoading();
+        showToast('Feature request submitted!');
+
+        // Clear form
+        document.getElementById('featureRequestForm').reset();
+
+        // Navigate back to dashboard
+        showPage('dashboard');
+    } catch (error) {
+        hideLoading();
+        console.error('Error submitting feature request:', error);
+        showToast('Error submitting request');
+    }
+});
+
 // Menu navigation - Admin
 document.getElementById('menuAdminLink').addEventListener('click', (e) => {
     e.preventDefault();
@@ -1853,6 +2019,13 @@ async function loadAdminPage() {
         userAnalytics.sort((a, b) => b.lastLogin - a.lastLogin);
 
         renderAdminTable(userAnalytics);
+
+        // Load feature requests
+        await loadFeatureRequests();
+
+        // Load delete rating dropdowns
+        await loadDeleteRatingDropdowns();
+
         hideLoading();
     } catch (error) {
         console.error('Error loading admin analytics:', error);
@@ -1997,6 +2170,116 @@ function formatDuration(seconds) {
     return `${minutes}m`;
 }
 
+// Load feature requests for admin panel
+async function loadFeatureRequests() {
+    try {
+        const featureRequestsSnapshot = await getDocs(collection(db, 'featureRequests'));
+        const featureRequests = [];
+
+        featureRequestsSnapshot.forEach(doc => {
+            featureRequests.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        // Sort by newest first
+        featureRequests.sort((a, b) => {
+            const aTime = a.submittedAt?.toDate?.() || new Date(0);
+            const bTime = b.submittedAt?.toDate?.() || new Date(0);
+            return bTime - aTime;
+        });
+
+        renderFeatureRequestsTable(featureRequests);
+    } catch (error) {
+        console.error('Error loading feature requests:', error);
+    }
+}
+
+// Render feature requests table
+function renderFeatureRequestsTable(featureRequests) {
+    const tbody = document.getElementById('featureRequestsTableBody');
+    tbody.innerHTML = '';
+
+    if (featureRequests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999; font-size: 14px; font-style: italic;">No feature requests yet</td></tr>';
+        return;
+    }
+
+    featureRequests.forEach((request) => {
+        const row = document.createElement('tr');
+        row.style.cursor = 'pointer';
+        row.dataset.expanded = 'false';
+        row.dataset.requestId = request.id;
+
+        const submittedDate = request.submittedAt?.toDate?.() || new Date();
+        const dateStr = formatDate(submittedDate);
+
+        row.innerHTML = `
+            <td style="font-weight: 600;">${request.title}</td>
+            <td>${request.memberName}</td>
+            <td>${dateStr}</td>
+            <td style="text-align: right;">
+                <button
+                    class="feature-request-delete-btn"
+                    data-request-id="${request.id}"
+                    style="background: transparent; border: none; color: #dc3545; font-size: 20px; cursor: pointer; padding: 4px 8px; line-height: 1;"
+                >×</button>
+            </td>
+        `;
+
+        // Add click handler to expand/collapse
+        row.addEventListener('click', (e) => {
+            // Don't expand if clicking delete button
+            if (e.target.classList.contains('feature-request-delete-btn')) return;
+
+            const isExpanded = row.dataset.expanded === 'true';
+            const existingDetailRow = row.nextElementSibling;
+
+            if (isExpanded) {
+                // Collapse
+                if (existingDetailRow && existingDetailRow.classList.contains('feature-detail-row')) {
+                    existingDetailRow.remove();
+                }
+                row.dataset.expanded = 'false';
+            } else {
+                // Expand
+                const detailRow = document.createElement('tr');
+                detailRow.classList.add('feature-detail-row');
+                detailRow.innerHTML = `
+                    <td colspan="4" style="background: #faf8f3; padding: 20px; border-left: 4px solid #ff6b35;">
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Description:</strong>
+                        </div>
+                        <div style="color: #333; line-height: 1.6; white-space: pre-wrap;">${request.description}</div>
+                    </td>
+                `;
+                row.after(detailRow);
+                row.dataset.expanded = 'true';
+            }
+        });
+
+        // Add delete button handler
+        row.querySelector('.feature-request-delete-btn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const requestId = e.target.dataset.requestId;
+
+            if (confirm('Delete this feature request?')) {
+                try {
+                    await deleteDoc(doc(db, 'featureRequests', requestId));
+                    showToast('Feature request deleted');
+                    await loadFeatureRequests();
+                } catch (error) {
+                    console.error('Error deleting feature request:', error);
+                    showToast('Error deleting request');
+                }
+            }
+        });
+
+        tbody.appendChild(row);
+    });
+}
+
 // Create User Account (Admin only)
 document.getElementById('createAccountForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -2061,6 +2344,724 @@ document.getElementById('createAccountForm').addEventListener('submit', async (e
         }
     }
 });
+
+// Admin Notification Sender
+document.getElementById('sendNotificationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        showToast('Access denied - Admin only');
+        return;
+    }
+
+    const message = document.getElementById('notificationMessage').value.trim();
+
+    if (!message) {
+        showToast('Message is required');
+        return;
+    }
+
+    showLoading();
+    try {
+        await addDoc(collection(db, 'notifications'), {
+            message: message,
+            type: 'admin_broadcast',
+            sentBy: currentUser.displayName || currentUser.email,
+            timestamp: serverTimestamp()
+        });
+
+        hideLoading();
+        showToast('Notification sent to all users!');
+
+        // Clear form
+        document.getElementById('sendNotificationForm').reset();
+    } catch (error) {
+        hideLoading();
+        console.error('Error sending notification:', error);
+        showToast('Error sending notification');
+    }
+});
+
+// ==================== NOTIFICATION BELL ====================
+
+// Notification bell toggle
+document.getElementById('notificationBellBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = document.getElementById('notificationDropdown');
+    dropdown.classList.toggle('hidden');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('notificationDropdown');
+    const bell = document.getElementById('notificationBellBtn');
+    if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+// Mark all notifications as read
+document.getElementById('markAllReadBtn').addEventListener('click', () => {
+    const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+    const allNotificationIds = Array.from(document.querySelectorAll('.notification-item')).map(item => item.dataset.notificationId);
+
+    allNotificationIds.forEach(id => {
+        if (!readNotifications.includes(id)) {
+            readNotifications.push(id);
+        }
+    });
+
+    localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
+    updateNotificationBadge();
+    renderNotifications();
+});
+
+// Load and render notifications
+let unsubscribeNotificationsDropdown = null;
+
+function setupNotificationDropdown() {
+    if (unsubscribeNotificationsDropdown) {
+        unsubscribeNotificationsDropdown();
+    }
+
+    const notificationsQuery = query(
+        collection(db, 'notifications'),
+        orderBy('timestamp', 'desc')
+    );
+
+    unsubscribeNotificationsDropdown = onSnapshot(notificationsQuery, (snapshot) => {
+        renderNotifications();
+    });
+}
+
+async function renderNotifications() {
+    const notificationList = document.getElementById('notificationList');
+    const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+
+    try {
+        const notificationsSnapshot = await getDocs(
+            query(collection(db, 'notifications'), orderBy('timestamp', 'desc'))
+        );
+
+        if (notificationsSnapshot.empty) {
+            notificationList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No notifications yet</div>';
+            updateNotificationBadge();
+            return;
+        }
+
+        const notifications = [];
+        notificationsSnapshot.forEach(doc => {
+            notifications.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        // Show only last 20 notifications
+        const recentNotifications = notifications.slice(0, 20);
+
+        notificationList.innerHTML = recentNotifications.map(notification => {
+            const isRead = readNotifications.includes(notification.id);
+            const timestamp = notification.timestamp?.toDate();
+            const timeAgo = timestamp ? formatDate(timestamp) : 'Just now';
+            const restaurantId = notification.restaurantId || '';
+
+            return `
+                <div class="notification-item ${isRead ? '' : 'unread'}"
+                     data-notification-id="${notification.id}"
+                     data-restaurant-id="${restaurantId}"
+                     style="${restaurantId ? 'cursor: pointer;' : ''}">
+                    <div class="notification-title">${notification.message}</div>
+                    <div class="notification-time">${timeAgo}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Mark notification as read when clicked and navigate if has restaurantId
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                const notificationId = item.dataset.notificationId;
+                const restaurantId = item.dataset.restaurantId;
+                const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+
+                // Mark as read
+                if (!readNotifications.includes(notificationId)) {
+                    readNotifications.push(notificationId);
+                    localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
+                    updateNotificationBadge();
+                    item.classList.remove('unread');
+                }
+
+                // Navigate to restaurant if has restaurantId
+                if (restaurantId) {
+                    // Close notification dropdown
+                    document.getElementById('notificationDropdown').classList.add('hidden');
+
+                    // Load and show restaurant detail
+                    try {
+                        const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
+                        if (restaurantDoc.exists()) {
+                            const restaurantData = restaurantDoc.data();
+                            const restaurant = {
+                                id: restaurantDoc.id,
+                                ...restaurantData,
+                                // Ensure averageRatings exists
+                                averageRatings: restaurantData.averageRatings || {
+                                    meal: 0,
+                                    bathroom: 0,
+                                    ambiance: 0,
+                                    service: 0
+                                }
+                            };
+                            showRestaurantDetail(restaurant);
+                        }
+                    } catch (error) {
+                        console.error('Error loading restaurant from notification:', error);
+                        showToast('Could not load restaurant');
+                    }
+                }
+            });
+        });
+
+        updateNotificationBadge();
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        notificationList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Error loading notifications</div>';
+    }
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById('notificationBadge');
+    const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+
+    getDocs(query(collection(db, 'notifications'), orderBy('timestamp', 'desc')))
+        .then(snapshot => {
+            const unreadCount = snapshot.docs.filter(doc => !readNotifications.includes(doc.id)).length;
+
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating badge:', error);
+        });
+}
+
+// ==================== RSVP FUNCTIONALITY ====================
+
+let currentEventId = null;
+
+async function setupRSVPForNextEvent() {
+    try {
+        const pickDoc = await getDoc(doc(db, 'tonightsPick', 'current'));
+        if (!pickDoc.exists() || !pickDoc.data().restaurantId) {
+            document.getElementById('rsvpSection').classList.add('hidden');
+            return;
+        }
+
+        currentEventId = pickDoc.data().restaurantId;
+
+        // Check if user has RSVP'd
+        const attendeeDoc = await getDoc(doc(db, 'eventAttendees', currentEventId, 'attendees', currentUser.uid));
+        const hasRSVPd = attendeeDoc.exists();
+
+        // Update RSVP button
+        const rsvpBtn = document.getElementById('rsvpBtn');
+        if (hasRSVPd) {
+            rsvpBtn.textContent = 'CANCEL RSVP';
+            rsvpBtn.classList.add('rsvped');
+        } else {
+            rsvpBtn.textContent = 'RSVP';
+            rsvpBtn.classList.remove('rsvped');
+        }
+
+        // Load attendee list
+        await loadAttendeeList(currentEventId);
+
+        document.getElementById('rsvpSection').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error setting up RSVP:', error);
+    }
+}
+
+async function loadAttendeeList(eventId) {
+    try {
+        const attendeesSnapshot = await getDocs(collection(db, 'eventAttendees', eventId, 'attendees'));
+        const attendees = [];
+
+        attendeesSnapshot.forEach(doc => {
+            attendees.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        const attendeeCount = document.getElementById('attendeeCount');
+        const attendeeNames = document.getElementById('attendeeNames');
+
+        attendeeCount.textContent = `${attendees.length} attending`;
+
+        if (attendees.length > 0) {
+            const names = attendees.map(a => a.userName).join(', ');
+            attendeeNames.textContent = names;
+            attendeeNames.style.display = 'block';
+        } else {
+            attendeeNames.textContent = '';
+            attendeeNames.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading attendees:', error);
+    }
+}
+
+// RSVP button click handler
+document.getElementById('rsvpBtn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+
+    if (!currentEventId) {
+        showToast('No event selected');
+        return;
+    }
+
+    try {
+        const attendeeDoc = await getDoc(doc(db, 'eventAttendees', currentEventId, 'attendees', currentUser.uid));
+        const hasRSVPd = attendeeDoc.exists();
+
+        if (hasRSVPd) {
+            // Cancel RSVP
+            await deleteDoc(doc(db, 'eventAttendees', currentEventId, 'attendees', currentUser.uid));
+            showToast('RSVP cancelled');
+
+            const rsvpBtn = document.getElementById('rsvpBtn');
+            rsvpBtn.textContent = 'RSVP';
+            rsvpBtn.classList.remove('rsvped');
+        } else {
+            // Add RSVP
+            await setDoc(doc(db, 'eventAttendees', currentEventId, 'attendees', currentUser.uid), {
+                userId: currentUser.uid,
+                userName: currentUser.displayName || currentUser.email,
+                rsvpedAt: serverTimestamp()
+            });
+            showToast('RSVP confirmed!');
+
+            const rsvpBtn = document.getElementById('rsvpBtn');
+            rsvpBtn.textContent = 'CANCEL RSVP';
+            rsvpBtn.classList.add('rsvped');
+        }
+
+        await loadAttendeeList(currentEventId);
+    } catch (error) {
+        console.error('Error toggling RSVP:', error);
+        showToast('Error updating RSVP');
+    }
+});
+
+// ==================== MARK ATTENDANCE ====================
+
+async function setupMarkAttendance(restaurant) {
+    const markAttendanceSection = document.getElementById('markAttendanceSection');
+    const markAttendanceBtn = document.getElementById('markAttendanceBtn');
+    const attendanceStatus = document.getElementById('attendanceStatus');
+
+    // Check if this restaurant has an event date
+    if (!restaurant.eventDate) {
+        markAttendanceSection.classList.add('hidden');
+        return;
+    }
+
+    const eventDate = restaurant.eventDate.toDate ? restaurant.eventDate.toDate() : new Date(restaurant.eventDate);
+    const now = new Date();
+
+    // Only show if event has started
+    if (now < eventDate) {
+        markAttendanceSection.classList.add('hidden');
+        return;
+    }
+
+    // Check if user RSVP'd
+    try {
+        const attendeeDoc = await getDoc(doc(db, 'eventAttendees', restaurant.id, 'attendees', currentUser.uid));
+
+        if (!attendeeDoc.exists()) {
+            markAttendanceSection.classList.add('hidden');
+            return;
+        }
+
+        const attendeeData = attendeeDoc.data();
+        const hasAttended = attendeeData.attended || false;
+
+        markAttendanceSection.classList.remove('hidden');
+
+        if (hasAttended) {
+            markAttendanceBtn.style.display = 'none';
+            attendanceStatus.textContent = '✓ You marked yourself as attended';
+            attendanceStatus.classList.add('attended');
+        } else {
+            markAttendanceBtn.style.display = 'block';
+            attendanceStatus.textContent = '';
+            attendanceStatus.classList.remove('attended');
+        }
+    } catch (error) {
+        console.error('Error checking attendance:', error);
+        markAttendanceSection.classList.add('hidden');
+    }
+}
+
+// Mark attendance button click handler
+document.getElementById('markAttendanceBtn').addEventListener('click', async () => {
+    if (!currentRestaurant) return;
+
+    try {
+        await updateDoc(doc(db, 'eventAttendees', currentRestaurant.id, 'attendees', currentUser.uid), {
+            attended: true,
+            attendedAt: serverTimestamp()
+        });
+
+        showToast('Marked as attended!');
+
+        document.getElementById('markAttendanceBtn').style.display = 'none';
+        const attendanceStatus = document.getElementById('attendanceStatus');
+        attendanceStatus.textContent = '✓ You marked yourself as attended';
+        attendanceStatus.classList.add('attended');
+
+        // Check if all attendees have rated - trigger report generation if so
+        await checkAndGenerateRatingReport(currentRestaurant.id);
+    } catch (error) {
+        console.error('Error marking attendance:', error);
+        showToast('Error marking attendance');
+    }
+});
+
+// ==================== LOAD AND DISPLAY RATING REPORT ====================
+
+async function loadRatingReport(restaurantId) {
+    const reportSection = document.getElementById('ratingReportSection');
+
+    try {
+        const reportDoc = await getDoc(doc(db, 'ratingReports', restaurantId));
+
+        if (reportDoc.exists()) {
+            const report = reportDoc.data();
+
+            // Show report section
+            reportSection.classList.remove('hidden');
+
+            // Populate report data
+            document.getElementById('reportVerdict').textContent = report.verdict;
+            document.getElementById('reportOverallAvg').textContent = `${report.overallAvg}/10`;
+            document.getElementById('reportTotalRaters').textContent = report.totalRaters;
+
+            // Populate superlatives
+            document.getElementById('toughestCritic').textContent = report.superlatives.toughestCritic;
+            document.getElementById('mostGenerous').textContent = report.superlatives.mostGenerous;
+            document.getElementById('mealMaster').textContent = report.superlatives.mealMaster;
+            document.getElementById('bathroomConnoisseur').textContent = report.superlatives.bathroomConnoisseur;
+            document.getElementById('ambianceAficionado').textContent = report.superlatives.ambianceAficionado;
+            document.getElementById('serviceSavant').textContent = report.superlatives.serviceSavant;
+        } else {
+            // No report exists - hide section
+            reportSection.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Error loading rating report:', error);
+        reportSection.classList.add('hidden');
+    }
+}
+
+// ==================== RATING REPORT GENERATION ====================
+
+async function checkAndGenerateRatingReport(restaurantId) {
+    try {
+        // Get all attendees who marked attendance
+        const attendeesSnapshot = await getDocs(collection(db, 'eventAttendees', restaurantId, 'attendees'));
+        const attendedUsers = [];
+
+        attendeesSnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.attended) {
+                attendedUsers.push({
+                    userId: doc.id,
+                    userName: data.userName
+                });
+            }
+        });
+
+        if (attendedUsers.length === 0) return;
+
+        // Get all ratings for this restaurant
+        const ratingsSnapshot = await getDocs(collection(db, 'restaurants', restaurantId, 'ratings'));
+        const ratings = {};
+
+        ratingsSnapshot.forEach(doc => {
+            ratings[doc.id] = {
+                userId: doc.id,
+                ...doc.data()
+            };
+        });
+
+        // Check if all attended users have rated
+        const allHaveRated = attendedUsers.every(attendee => ratings[attendee.userId]);
+
+        if (!allHaveRated) {
+            console.log('Not all attendees have rated yet');
+            return;
+        }
+
+        // Check if report already exists
+        const reportDoc = await getDoc(doc(db, 'ratingReports', restaurantId));
+        if (reportDoc.exists()) {
+            console.log('Report already generated for this event');
+            return;
+        }
+
+        // Generate the report
+        const report = generateRatingReport(attendedUsers, ratings, restaurantId);
+
+        // Save report to Firestore
+        await setDoc(doc(db, 'ratingReports', restaurantId), {
+            ...report,
+            generatedAt: serverTimestamp()
+        });
+
+        // Send notification to all users
+        const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
+        const restaurantName = restaurantDoc.data()?.name || 'Unknown';
+
+        await addDoc(collection(db, 'notifications'), {
+            message: `📊 Rating report for ${restaurantName} is ready!`,
+            type: 'rating_report',
+            restaurantId: restaurantId,
+            timestamp: serverTimestamp()
+        });
+
+        console.log('Rating report generated and notification sent!');
+
+        // Refresh the report display if we're currently viewing this restaurant
+        if (currentRestaurant && currentRestaurant.id === restaurantId) {
+            await loadRatingReport(restaurantId);
+        }
+    } catch (error) {
+        console.error('Error generating rating report:', error);
+    }
+}
+
+function generateRatingReport(attendedUsers, ratings, restaurantId) {
+    const userRatings = attendedUsers.map(attendee => ({
+        ...attendee,
+        ...ratings[attendee.userId]
+    }));
+
+    // Calculate superlatives
+    const superlatives = {};
+
+    if (userRatings.length === 1) {
+        // Solo diner - they win everything!
+        const soloUser = userRatings[0];
+        superlatives.toughestCritic = soloUser.userName;
+        superlatives.mostGenerous = soloUser.userName;
+        superlatives.mealMaster = soloUser.userName;
+        superlatives.bathroomConnoisseur = soloUser.userName;
+        superlatives.ambianceAficionado = soloUser.userName;
+        superlatives.serviceSavant = soloUser.userName;
+    } else {
+        // Multiple attendees - calculate actual superlatives
+        // Toughest Critic (lowest average)
+        const averages = userRatings.map(user => ({
+            userName: user.userName,
+            avg: (user.meal + user.bathroom + user.ambiance + user.service) / 4
+        }));
+        const toughest = averages.reduce((min, user) => user.avg < min.avg ? user : min);
+        superlatives.toughestCritic = toughest.userName;
+
+        // Most Generous (highest average)
+        const mostGenerous = averages.reduce((max, user) => user.avg > max.avg ? user : max);
+        superlatives.mostGenerous = mostGenerous.userName;
+
+        // Meal Master (highest meal rating)
+        const mealMaster = userRatings.reduce((max, user) => user.meal > max.meal ? user : max);
+        superlatives.mealMaster = mealMaster.userName;
+
+        // Bathroom Connoisseur (highest bathroom rating)
+        const bathroomConnoisseur = userRatings.reduce((max, user) => user.bathroom > max.bathroom ? user : max);
+        superlatives.bathroomConnoisseur = bathroomConnoisseur.userName;
+
+        // Ambiance Aficionado (highest ambiance rating)
+        const ambianceAficionado = userRatings.reduce((max, user) => user.ambiance > max.ambiance ? user : max);
+        superlatives.ambianceAficionado = ambianceAficionado.userName;
+
+        // Service Savant (highest service rating)
+        const serviceSavant = userRatings.reduce((max, user) => user.service > max.service ? user : max);
+        superlatives.serviceSavant = serviceSavant.userName;
+    }
+
+    // Overall verdict
+    const averages = userRatings.map(user => ({
+        userName: user.userName,
+        avg: (user.meal + user.bathroom + user.ambiance + user.service) / 4
+    }));
+    const overallAvg = averages.reduce((sum, user) => sum + user.avg, 0) / averages.length;
+    let verdict = '';
+    if (overallAvg >= 8) verdict = '🔥 Absolutely Fire!';
+    else if (overallAvg >= 6.5) verdict = '👍 Solid Choice';
+    else if (overallAvg >= 5) verdict = '😐 It Was Alright';
+    else verdict = '👎 Maybe Skip This One';
+
+    return {
+        restaurantId,
+        superlatives,
+        verdict,
+        overallAvg: overallAvg.toFixed(1),
+        totalRaters: userRatings.length
+    };
+}
+
+// ==================== DELETE RATING TOOL ====================
+
+async function loadDeleteRatingDropdowns() {
+    const restaurantSelect = document.getElementById('deleteRatingRestaurant');
+    const userSelect = document.getElementById('deleteRatingUser');
+
+    try {
+        // Load all restaurants
+        const restaurantsSnapshot = await getDocs(collection(db, 'restaurants'));
+        restaurantSelect.innerHTML = '<option value="">Select a restaurant...</option>';
+
+        restaurantsSnapshot.forEach(doc => {
+            const restaurant = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = restaurant.name;
+            restaurantSelect.appendChild(option);
+        });
+
+        // Load all users from sessions
+        const sessionsSnapshot = await getDocs(collection(db, 'sessions'));
+        const users = [];
+
+        sessionsSnapshot.forEach(doc => {
+            const sessionData = doc.data();
+            users.push({
+                userId: doc.id,
+                userName: sessionData.userName || sessionData.email || 'Unknown'
+            });
+        });
+
+        // Sort by name
+        users.sort((a, b) => a.userName.localeCompare(b.userName));
+
+        userSelect.innerHTML = '<option value="">Select a user...</option>';
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.userId;
+            option.textContent = user.userName;
+            userSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error loading delete rating dropdowns:', error);
+    }
+}
+
+// Delete rating form submission
+document.getElementById('deleteRatingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        showToast('Access denied - Admin only');
+        return;
+    }
+
+    const restaurantId = document.getElementById('deleteRatingRestaurant').value;
+    const userId = document.getElementById('deleteRatingUser').value;
+
+    if (!restaurantId || !userId) {
+        showToast('Please select both restaurant and user');
+        return;
+    }
+
+    // Get restaurant and user names for confirmation
+    const restaurantSelect = document.getElementById('deleteRatingRestaurant');
+    const userSelect = document.getElementById('deleteRatingUser');
+    const restaurantName = restaurantSelect.options[restaurantSelect.selectedIndex].text;
+    const userName = userSelect.options[userSelect.selectedIndex].text;
+
+    const confirmed = await showConfirmModal(
+        'Delete Rating',
+        `Delete ${userName}'s rating for ${restaurantName}?`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    showLoading();
+    try {
+        // Delete the rating
+        await deleteDoc(doc(db, 'restaurants', restaurantId, 'ratings', userId));
+
+        // Recalculate rating count for the restaurant
+        const ratingsSnapshot = await getDocs(collection(db, 'restaurants', restaurantId, 'ratings'));
+        const newRatingCount = ratingsSnapshot.size;
+
+        // Update restaurant's rating count
+        await updateDoc(doc(db, 'restaurants', restaurantId), {
+            ratingCount: newRatingCount
+        });
+
+        hideLoading();
+        showToast('Rating deleted successfully!');
+
+        // Reset form
+        document.getElementById('deleteRatingForm').reset();
+    } catch (error) {
+        hideLoading();
+        console.error('Error deleting rating:', error);
+        showToast('Error deleting rating');
+    }
+});
+
+// ==================== CONFIRMATION MODAL ====================
+
+function showConfirmModal(title, message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const messageEl = document.getElementById('confirmModalMessage');
+        const confirmBtn = document.getElementById('confirmModalConfirm');
+        const cancelBtn = document.getElementById('confirmModalCancel');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.style.display = 'flex';
+
+        const handleConfirm = () => {
+            modal.style.display = 'none';
+            confirmBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            modal.style.display = 'none';
+            confirmBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            resolve(false);
+        };
+
+        confirmBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        });
+    });
+}
 
 // Initialize
 console.log('Beachlands Curry Club initialized');
