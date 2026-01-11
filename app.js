@@ -3145,18 +3145,9 @@ async function loadRatingReport(restaurantId) {
             // Show report section
             reportSection.classList.remove('hidden');
 
-            // Populate report data
-            document.getElementById('reportVerdict').textContent = report.verdict;
-            document.getElementById('reportOverallAvg').textContent = `${report.overallAvg}/10`;
-            document.getElementById('reportTotalRaters').textContent = report.totalRaters;
-
-            // Populate superlatives
-            document.getElementById('toughestCritic').textContent = report.superlatives.toughestCritic;
-            document.getElementById('mostGenerous').textContent = report.superlatives.mostGenerous;
-            document.getElementById('mealMaster').textContent = report.superlatives.mealMaster;
-            document.getElementById('bathroomConnoisseur').textContent = report.superlatives.bathroomConnoisseur;
-            document.getElementById('ambianceAficionado').textContent = report.superlatives.ambianceAficionado;
-            document.getElementById('serviceSavant').textContent = report.superlatives.serviceSavant;
+            // Display narrative text
+            const narrativeEl = document.getElementById('reportNarrative');
+            narrativeEl.textContent = report.narrative || 'Report narrative not available';
         } else {
             // No report exists - hide section
             reportSection.classList.add('hidden');
@@ -3214,7 +3205,7 @@ async function checkAndGenerateRatingReport(restaurantId) {
         }
 
         // Generate the report
-        const report = generateRatingReport(attendedUsers, ratings, restaurantId);
+        const report = await generateRatingReport(attendedUsers, ratings, restaurantId);
 
         // Save report to Firestore
         await setDoc(doc(db, 'ratingReports', restaurantId), {
@@ -3244,11 +3235,15 @@ async function checkAndGenerateRatingReport(restaurantId) {
     }
 }
 
-function generateRatingReport(attendedUsers, ratings, restaurantId) {
+async function generateRatingReport(attendedUsers, ratings, restaurantId) {
     const userRatings = attendedUsers.map(attendee => ({
         ...attendee,
         ...ratings[attendee.userId]
     }));
+
+    // Get restaurant name
+    const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
+    const restaurantName = restaurantDoc.data()?.name || 'Unknown Restaurant';
 
     // Calculate superlatives
     const superlatives = {};
@@ -3300,17 +3295,82 @@ function generateRatingReport(attendedUsers, ratings, restaurantId) {
     }));
     const overallAvg = averages.reduce((sum, user) => sum + user.avg, 0) / averages.length;
     let verdict = '';
-    if (overallAvg >= 8) verdict = '🔥 Absolutely Fire!';
-    else if (overallAvg >= 6.5) verdict = '👍 Solid Choice';
-    else if (overallAvg >= 5) verdict = '😐 It Was Alright';
-    else verdict = '👎 Maybe Skip This One';
+    let verdictEmoji = '';
+    if (overallAvg >= 8) {
+        verdict = 'ABSOLUTELY FIRE';
+        verdictEmoji = '🔥';
+    } else if (overallAvg >= 6.5) {
+        verdict = 'SOLID CHOICE';
+        verdictEmoji = '👍';
+    } else if (overallAvg >= 5) {
+        verdict = 'IT WAS ALRIGHT';
+        verdictEmoji = '😐';
+    } else {
+        verdict = 'MAYBE SKIP THIS ONE';
+        verdictEmoji = '👎';
+    }
+
+    // Generate narrative text for reading aloud
+    let narrative = '';
+
+    if (userRatings.length === 1) {
+        // Solo diner special narrative
+        narrative = `📖 TONIGHT'S CURRY CLUB REPORT\n\n`;
+        narrative += `Alright everyone, we've got a SOLO MISSION tonight! ${superlatives.mealMaster} flew solo at ${restaurantName}!\n\n`;
+        narrative += `And the verdict? ${verdictEmoji} ${verdict}! With a ${overallAvg} out of 10, ${superlatives.mealMaster} has spoken!\n\n`;
+        narrative += `Obviously, ${superlatives.mealMaster} takes home ALL the awards tonight:\n`;
+        narrative += `🍛 Meal Master\n`;
+        narrative += `🚽 Bathroom Connoisseur\n`;
+        narrative += `🕯️ Ambiance Aficionado\n`;
+        narrative += `🙏 Service Savant\n`;
+        narrative += `And somehow both Toughest Critic AND Most Generous!\n\n`;
+        narrative += `Respect to our lone warrior! 🙌`;
+    } else {
+        // Multiple attendees - full ceremony
+        narrative = `📖 TONIGHT'S CURRY CLUB REPORT\n\n`;
+        narrative += `Alright everyone, gather 'round! The ratings are in and we've got some SPICY results to announce! 🌶️\n\n`;
+        narrative += `Tonight at ${restaurantName}, ${userRatings.length} brave souls came together to judge the curry.\n\n`;
+        narrative += `First things first - overall verdict? ${verdictEmoji} ${verdict}! With a solid ${overallAvg} out of 10, ${restaurantName} has ${overallAvg >= 7 ? 'earned its place in the Curry Club Hall of Fame' : 'given us... an experience'}!\n\n`;
+        narrative += `Now let's talk superlatives, shall we?\n\n`;
+
+        // Meal Master
+        narrative += `🍛 MEAL MASTER goes to... ${superlatives.mealMaster.toUpperCase()}!\n`;
+        if (overallAvg >= 7) {
+            narrative += `${superlatives.mealMaster} gave the food top marks. Clearly someone knows good curry when they taste it!\n\n`;
+        } else {
+            narrative += `${superlatives.mealMaster} found something to love about the food. Optimism at its finest!\n\n`;
+        }
+
+        // Bathroom Connoisseur
+        narrative += `🚽 BATHROOM CONNOISSEUR - ${superlatives.bathroomConnoisseur.toUpperCase()}!\n`;
+        narrative += `${superlatives.bathroomConnoisseur} knows a quality loo when they see one. Should we be concerned about how much time was spent evaluating the facilities? Probably.\n\n`;
+
+        // Ambiance Aficionado
+        narrative += `🕯️ AMBIANCE AFICIONADO goes to ${superlatives.ambianceAficionado.toUpperCase()}!\n`;
+        narrative += `${superlatives.ambianceAficionado} was really feeling the vibes tonight. Those mood lighting experts better watch out!\n\n`;
+
+        // Service Savant
+        narrative += `🙏 SERVICE SAVANT - ${superlatives.serviceSavant.toUpperCase()}!\n`;
+        narrative += `${superlatives.serviceSavant} recognized excellence when they saw it. The staff are definitely getting a shout-out!\n\n`;
+
+        // Most Generous
+        narrative += `And the MOST GENEROUS award goes to... ${superlatives.mostGenerous.toUpperCase()}!\n`;
+        narrative += `${superlatives.mostGenerous} out here spreading the love with the highest average score. We love to see it!\n\n`;
+
+        // Toughest Critic (saved for last for dramatic effect)
+        narrative += `Finally, our TOUGHEST CRITIC award goes to ${superlatives.toughestCritic.toUpperCase()}!\n`;
+        narrative += `Someone's gotta keep us honest. ${superlatives.toughestCritic} brought the heat with the lowest average - we see you, mate.\n\n`;
+
+        narrative += `That's your Curry Club Report - thanks for coming out, everyone! 🙏`;
+    }
 
     return {
         restaurantId,
         superlatives,
-        verdict,
+        verdict: `${verdictEmoji} ${verdict}`,
         overallAvg: overallAvg.toFixed(1),
-        totalRaters: userRatings.length
+        totalRaters: userRatings.length,
+        narrative
     };
 }
 
