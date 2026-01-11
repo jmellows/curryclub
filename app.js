@@ -966,19 +966,25 @@ async function showRestaurantDetail(restaurant) {
             const overallAvg = ((userRating.meal + userRating.bathroom + userRating.ambiance + userRating.service) / 4).toFixed(1);
             document.getElementById('overallAverageValue').textContent = `${overallAvg}/10`;
 
-            // Check if this is Next Event and disable submit button if user already rated
-            getDoc(doc(db, 'tonightsPick', 'current')).then(pickDoc => {
+            // Check if this is Next Event and disable submit button if user already rated FOR THIS EVENT
+            getDoc(doc(db, 'tonightsPick', 'current')).then(async pickDoc => {
                 const isNextEvent = pickDoc.exists() && pickDoc.data().restaurantId === restaurant.id;
                 if (isNextEvent && restaurant.eventDate) {
                     const eventDate = restaurant.eventDate.toDate ? restaurant.eventDate.toDate() : new Date(restaurant.eventDate);
                     const now = new Date();
 
-                    // Only disable button if event has started (otherwise button is hidden anyway)
+                    // Only check if event has started (otherwise button is hidden anyway)
                     if (now >= eventDate) {
-                        const submitBtn = document.getElementById('submitRating');
-                        submitBtn.disabled = true;
-                        submitBtn.classList.add('submitted');
-                        submitBtn.textContent = 'RATING SUBMITTED';
+                        // Check if user has rated for THIS specific event instance
+                        const attendeeDoc = await getDoc(doc(db, 'eventAttendees', restaurant.id, 'attendees', currentUser.uid));
+
+                        if (attendeeDoc.exists() && attendeeDoc.data().ratedForEvent === true) {
+                            const submitBtn = document.getElementById('submitRating');
+                            submitBtn.disabled = true;
+                            submitBtn.classList.add('submitted');
+                            submitBtn.textContent = 'RATING SUBMITTED';
+                        }
+                        // If not an attendee, don't disable button (they can still rate if they want)
                     }
                 }
             });
@@ -1888,6 +1894,28 @@ document.getElementById('submitRating').addEventListener('click', async () => {
     }
 
     await saveRatingToFirebase();
+
+    // Mark as rated for this event instance if this is Next Event
+    try {
+        const pickDoc = await getDoc(doc(db, 'tonightsPick', 'current'));
+        const isNextEvent = pickDoc.exists() && pickDoc.data().restaurantId === currentRestaurant.id;
+
+        if (isNextEvent) {
+            // Update attendee document to mark rating submitted for this event
+            const attendeeRef = doc(db, 'eventAttendees', currentRestaurant.id, 'attendees', currentUser.uid);
+            const attendeeDoc = await getDoc(attendeeRef);
+
+            if (attendeeDoc.exists()) {
+                await updateDoc(attendeeRef, {
+                    ratedForEvent: true,
+                    ratedAt: serverTimestamp()
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error updating event rating flag:', error);
+        // Don't show error to user - rating was saved successfully
+    }
 
     // Disable button and change appearance
     submitBtn.disabled = true;
