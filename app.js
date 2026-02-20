@@ -35,16 +35,7 @@ import {
     deleteObject,
     listAll
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
-
-// Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyBUHbaZnPKBA4pZ5YRwZmHwoB-68I5LKEg",
-    authDomain: "beachlands-curry-club.firebaseapp.com",
-    projectId: "beachlands-curry-club",
-    storageBucket: "beachlands-curry-club.firebasestorage.app",
-    messagingSenderId: "797609017294",
-    appId: "1:797609017294:web:e7161e1442036a483ff59f"
-};
+import { firebaseConfig } from './firebase-config.js';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

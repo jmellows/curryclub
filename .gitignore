@@ -4,3 +4,7 @@ node_modules/
 *.log
 .vscode/
 .idea/
+firebase-config.js
+seed-data.html
+delete-test-restaurants.html
+delete-test-restaurants.js
