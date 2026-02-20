@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#ff6b35"/>
+
+  <!-- Bowl body -->
+  <ellipse cx="256" cy="310" rx="150" ry="70" fill="#fff"/>
+  <rect x="106" y="270" width="300" height="40" fill="#fff"/>
+  <ellipse cx="256" cy="270" rx="150" ry="55" fill="#ffe0c2"/>
+
+  <!-- Curry fill in bowl -->
+  <ellipse cx="256" cy="270" rx="130" ry="42" fill="#ffb347"/>
+
+  <!-- Curry details - small circles for texture -->
+  <circle cx="220" cy="262" r="12" fill="#ff9a1f" opacity="0.6"/>
+  <circle cx="270" cy="275" r="10" fill="#ff9a1f" opacity="0.5"/>
+  <circle cx="245" cy="255" r="8" fill="#ff9a1f" opacity="0.4"/>
+
+  <!-- Steam lines -->
+  <path d="M200 200 Q195 175 205 155 Q215 135 200 115" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+  <path d="M256 190 Q251 165 261 145 Q271 125 256 105" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+  <path d="M312 200 Q307 175 317 155 Q327 135 312 115" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- Bowl rim highlight -->
+  <ellipse cx="256" cy="270" rx="150" ry="55" fill="none" stroke="white" stroke-width="4" opacity="0.3"/>
+
+  <!-- Small chili pepper accent -->
+  <path d="M330 240 Q345 230 355 240 Q348 255 330 250 Z" fill="#e8432a"/>
+  <path d="M354 238 Q360 228 358 222" fill="none" stroke="#4a9e3f" stroke-width="3" stroke-linecap="round"/>
+</svg>

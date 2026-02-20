@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ff6b35">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Curry Club">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Beachlands Curry Club</title>
     <link rel="stylesheet" href="style.css?v=102">
 </head>
@@ -349,6 +355,32 @@
                 </p>
             </div>
 
+            <!-- Reset User Password -->
+            <div class="admin-content" style="margin-bottom: 24px;">
+                <h2 class="table-subtitle">RESET USER PASSWORD</h2>
+                <form id="resetPasswordForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 14px; font-weight: 600; color: #666;">User Email</label>
+                        <input
+                            type="email"
+                            id="resetPasswordEmail"
+                            required
+                            placeholder="Enter user's email..."
+                            style="padding: 12px 16px; border: 2px solid #e5e5e5; border-radius: 12px; font-size: 14px; background: #f7f7f7;"
+                        >
+                    </div>
+                    <button
+                        type="submit"
+                        style="padding: 14px 24px; background: linear-gradient(180deg, #ff8c52, #ff6b35); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25); text-transform: uppercase;"
+                    >
+                        SEND RESET LINK
+                    </button>
+                </form>
+                <p style="font-size: 12px; color: #999; margin-top: 12px; font-style: italic;">
+                    This sends a password reset email to the user. Inform them to check their inbox.
+                </p>
+            </div>
+
             <!-- Send Notification -->
             <div class="admin-content" style="margin-bottom: 24px;">
                 <h2 class="table-subtitle">SEND NOTIFICATION</h2>
@@ -689,5 +721,10 @@
     </div>
 
     <script type="module" src="app.js?v=117"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
 </body>
 </html>

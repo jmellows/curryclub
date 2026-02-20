@@ -9,7 +9,8 @@ import {
     updateProfile,
     updatePassword,
     reauthenticateWithCredential,
-    EmailAuthProvider
+    EmailAuthProvider,
+    sendPasswordResetEmail
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import {
     getFirestore,
@@ -2737,6 +2738,38 @@ document.getElementById('createAccountForm').addEventListener('submit', async (e
             showToast('Password must be at least 6 characters');
         } else {
             showToast('Error creating account: ' + error.message);
+        }
+    }
+});
+
+// Reset User Password (Admin only)
+document.getElementById('resetPasswordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        showToast('Access denied - Admin only');
+        return;
+    }
+
+    const email = document.getElementById('resetPasswordEmail').value.trim();
+    if (!email) {
+        showToast('Please enter the user\'s email');
+        return;
+    }
+
+    showLoading();
+    try {
+        await sendPasswordResetEmail(auth, email);
+        hideLoading();
+        showToast('Password reset email sent to ' + email);
+        document.getElementById('resetPasswordForm').reset();
+    } catch (error) {
+        hideLoading();
+        console.error('Error sending reset email:', error);
+        if (error.code === 'auth/user-not-found') {
+            showToast('No account found with that email');
+        } else {
+            showToast('Error: ' + error.message);
         }
     }
 });
